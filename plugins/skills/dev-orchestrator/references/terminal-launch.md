@@ -15,7 +15,7 @@ orch-s[N]-[short-name]
   ASCII only, max ~10 chars, so the whole name stays around 10-15 chars and
   fits in a tab title. Examples: `orch-s1-auth`, `orch-s3-migrate`.
 - Use the same name for the terminal title, the brief file
-  (`orchestrator-tasks/step-[N]-[short-name].md`), the result file and the
+  (`.dev/tasks/step-[N]-[short-name].md`), the result file and the
   scratchpad entry.
 
 ## 2. Detect the user's terminal
@@ -55,7 +55,7 @@ Shared variables (run from the project root):
 
 ```bash
 NAME="orch-s2-ratelimit"
-BRIEF="orchestrator-tasks/step-2-ratelimit.md"
+BRIEF=".dev/tasks/step-2-ratelimit.md"
 CMD="claude 'Read $BRIEF and execute it exactly as written.'"
 ```
 
@@ -121,7 +121,7 @@ without the Lead agreeing to switch to single-session mode.
 
 ## 5. Waiting for completion
 
-The Orchestrator waits for `orchestrator-tasks/step-[N]-[short-name].result.md` to
+The Orchestrator waits for `.dev/tasks/step-[N]-[short-name].result.md` to
 exist (poll with a reasonable interval, or use the harness's background
 monitor). Then it reads the result, merges it into the scratchpad, and
 either launches the next step or, if `Status: Blocked`, surfaces the
