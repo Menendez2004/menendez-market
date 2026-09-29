@@ -10,7 +10,8 @@ description: >-
   session in its own terminal, named orch-sN-name, opened in
   the terminal the user is actually using) per plan step; each Task Agent may
   spawn ephemeral read-only Research Sub-agents that prefer graphify when it
-  is available. Hard limit: 2 levels below the orchestrator, no deeper. Never
+  is available. Hard limit: 2 levels below the orchestrator, no deeper. No
+  agent runs tests; the orchestrator runs checks once at the end. Never
   guesses on ambiguity, architecture, or destructive/git actions -- always
   halts and escalates to the Lead via the escalate_to_lead protocol.
   Maintains a shared Context Scratchpad instead of passing chat history.
@@ -57,7 +58,7 @@ exists. Full roles, permissions and briefing templates:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
-`rules/high-adopt-lead-plan.md`.
+`rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`.
 
 ## Workflow
 
@@ -124,7 +125,20 @@ answer -- do not assume a default:
      plan marks them independent AND the Lead approved parallel execution in
      step 4.
 
-### 6. Research Sub-agents and graphify
+### 6. Final checks -- never tests
+
+No agent in this skill runs tests: not the Orchestrator, not a Task Agent,
+not a Research Sub-agent. Writing or editing test files is fine when a plan
+step asks for it; executing test suites is not.
+
+Once, **after every plan step is complete**, the Orchestrator runs the
+project's fast checks (lint, format check, typecheck, build/compile, and the
+project's own validators) and records the outcome in the scratchpad. Task
+Agents do not run checks per step. If a check fails, report the output to
+the Lead and ask how to proceed; do not loop on fixes on your own. Details:
+`rules/high-checks-not-tests.md`.
+
+### 7. Research Sub-agents and graphify
 
 Task Agents investigate **before** modifying code by spawning ephemeral
 Research Sub-agents through the inline `Agent` tool (read-only type such as
@@ -140,14 +154,14 @@ Agent's main context. Each Research Sub-agent:
 
 Details: `references/graphify.md`, `rules/critical-research-read-only.md`.
 
-### 7. Context Scratchpad
+### 8. Context Scratchpad
 
 `.dev/orchestrator.md` is the single shared source of project
 state. Only you (the Orchestrator) write it; Task Agents write their own
 `.result.md` file and you merge it. Read it before every step; update it
 after every step. Format: `references/context-scratchpad.md`.
 
-### 8. Escalation -- ask the Lead, never guess
+### 9. Escalation -- ask the Lead, never guess
 
 Trigger `escalate_to_lead` immediately, and halt until the Lead responds, on
 any of:
@@ -171,6 +185,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-ask-the-lead.md` -- no guessing on ambiguity or architecture.
 - `rules/critical-no-autonomous-git.md` -- no autonomous git/PR actions.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
+- `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
 
 ## References
 
