@@ -25,7 +25,7 @@ harness.
 
 - **Orchestrator (Level 0)**: escalates in the Lead's main session.
 - **Task Agent (Level 1)**: escalates in its own terminal
-  (`orchestrator-task-step-[N]-[short-name]`), where the Lead can answer it
+  (`orch-s[N]-[short-name]`), where the Lead can answer it
   directly, and also writes `Status: Blocked` plus the JSON payload to its
   result file so the Orchestrator knows the step is halted.
 - **Research Sub-agent (Level 2)**: never escalates. It reports the open

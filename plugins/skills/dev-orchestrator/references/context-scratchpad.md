@@ -67,7 +67,7 @@ reworded. Mark independent steps, e.g. "(independent)".>
 <One subsection per step, in the form:>
 
 ### Step <N>: <short step title>
-- Terminal: orchestrator-task-step-<N>-<short-name>
+- Terminal: orch-s<N>-<short-name>
 - Brief: orchestrator-tasks/step-<N>-<short-name>.md
 - Status: <Running | Complete | Blocked | Failed>
 - Result: <files touched, tests run, research used (graphify yes/no), notes>

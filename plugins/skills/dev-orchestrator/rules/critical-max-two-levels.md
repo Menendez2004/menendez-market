@@ -8,7 +8,7 @@ tags: [hierarchy, multi-agent, task-agent, research-subagent]
 
 ```
 Task Agent for step 2 decides the step is big, opens a new terminal
-"orchestrator-task-step-2b-tests" and starts another claude session there to
+"orch-s2b-tests" and starts another claude session there to
 write the tests, while it keeps editing the service. That session in turn
 spawns an Agent-tool helper that edits fixtures.
 ```
