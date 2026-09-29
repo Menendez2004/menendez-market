@@ -26,19 +26,20 @@ Marketplace de plugins para Claude Code.
 
 ```
 .claude-plugin/
-  marketplace.json          # catálogo del marketplace (solo manifiestos aquí)
+  marketplace.json          # catálogo: cada plugin apunta a su skill
 plugins/
-  <plugin>/
-    .claude-plugin/
-      plugin.json           # manifiesto del plugin
-    skills/
-      <skill>/SKILL.md      # skill + references/, rules/, assets/
+  skills/
+    dev-orchestrator/       # SKILL.md + references/, rules/
+    qa-orchestrator/        # SKILL.md + references/, rules/, assets/
 ```
 
-Para agregar un plugin nuevo: crea `plugins/<nombre>/` con su `.claude-plugin/plugin.json`
-y sus `skills/`, agrégalo a `.claude-plugin/marketplace.json` y valida con:
+Cada entrada de `marketplace.json` usa `"strict": false` y declara su skill con
+`"skills": ["./plugins/skills/<nombre>"]`, así cada plugin se instala por separado
+y solo carga su propia skill.
+
+Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md`, agrega una
+entrada en `.claude-plugin/marketplace.json` y valida con:
 
 ```bash
 claude plugin validate .
-claude plugin validate plugins/<nombre>
 ```
