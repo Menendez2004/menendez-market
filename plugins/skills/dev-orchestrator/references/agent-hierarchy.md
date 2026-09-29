@@ -32,7 +32,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
   (`rules/high-adopt-lead-plan.md`), or -- only if there is no plan and the
   task is complex -- proposes one with `model: "opus"` or requests one.
 - Asks the mandatory single-session vs. multi-agent question.
-- Sole writer of `orchestrator-scratchpad.md`.
+- Sole writer of `.dev/orchestrator.md`.
 - Launches one Task Agent per plan step in the user's terminal
   (`references/terminal-launch.md`), then merges each result.
 - Never implements a step itself in multi-agent mode.
@@ -48,7 +48,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
   investigate before editing, so exploration does not fill its own context.
 - Must not: launch other Task Agents, open terminals, touch other steps'
   scope, or commit/push/merge/open PRs.
-- Writes its outcome to `orchestrator-tasks/step-[N]-[short-name].result.md` and
+- Writes its outcome to `.dev/tasks/step-[N]-[short-name].result.md` and
   never edits the shared scratchpad directly.
 
 ### Research Sub-agent (Level 2)
@@ -70,7 +70,7 @@ not just by the prompt.
 
 ## Task Agent brief template
 
-The Orchestrator writes this to `orchestrator-tasks/step-[N]-[short-name].md` before
+The Orchestrator writes this to `.dev/tasks/step-[N]-[short-name].md` before
 launching the terminal:
 
 ```markdown
@@ -84,7 +84,7 @@ Terminal / session name: orch-s<N>-<short-name>
 
 ## Current project state
 
-<Full current contents of orchestrator-scratchpad.md.>
+<Full current contents of .dev/orchestrator.md.>
 
 ## Rules you must follow
 
@@ -99,8 +99,8 @@ Terminal / session name: orch-s<N>-<short-name>
 - On ambiguity, an architectural choice, or any destructive action: emit
   escalate_to_lead (references/escalate-to-lead-schema.md) in this terminal,
   mark the step Blocked in your result file, and stop.
-- Do not edit orchestrator-scratchpad.md. When done (or blocked),
-  write orchestrator-tasks/step-<N>-<short-name>.result.md using the result format.
+- Do not edit .dev/orchestrator.md. When done (or blocked),
+  write .dev/tasks/step-<N>-<short-name>.result.md using the result format.
 ```
 
 ## Task Agent result format

@@ -7,7 +7,7 @@ one, in this order:
 
 1. the Lead's initial request (a numbered list, checklist, "Plan:" section,
    linked/attached plan file), then
-2. the `## Plan` section of `orchestrator-scratchpad.md`.
+2. the `## Plan` section of `.dev/orchestrator.md`.
 
 If either contains a plan, it is the plan. The Orchestrator **never** creates,
 rewrites, reorders, splits, merges, or regenerates it -- not even to "improve"
@@ -72,12 +72,12 @@ After intake/planning the Orchestrator always asks the mandatory question
   updating the scratchpad after each. It may use read-only Research
   Sub-agents (`references/agent-hierarchy.md`).
 - **Multi-agent** -> for each step the Orchestrator:
-  1. writes the brief `orchestrator-tasks/step-[N]-[short-name].md`
+  1. writes the brief `.dev/tasks/step-[N]-[short-name].md`
      (template in `references/agent-hierarchy.md`),
   2. opens a new terminal in the user's terminal app named
      `orch-s[N]-[short-name]` and starts an independent CLI
      session on that brief (`references/terminal-launch.md`),
-  3. waits for `orchestrator-tasks/step-[N]-[short-name].result.md`,
+  3. waits for `.dev/tasks/step-[N]-[short-name].result.md`,
   4. merges the result into the scratchpad, and only then launches the next
      step.
 
