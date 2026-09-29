@@ -69,7 +69,9 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 In Claude Code, prefer a built-in read-only subagent type (e.g.
 `subagent_type: "Explore"`) so the restriction is enforced by the tool set,
-not just by the prompt.
+not just by the prompt. Never use a subagent type that inherits the parent's
+conversation (a fork): the Research Sub-agent starts with only its brief, and
+its brief carries only the question and scope, not the Task Agent's history.
 
 ## Task Agent brief template
 
@@ -93,9 +95,12 @@ Terminal / session name: orch-s<N>-<short-name>
 
 <Other steps in this wave and their owned files, or "none".>
 
-## Current project state
+## Context you need (scoped -- not the full scratchpad)
 
-<Full current contents of .dev/orchestrator.md.>
+- Task goal: <one or two lines summarizing the Lead's task>
+- Decisions that affect this step: <only the relevant Decisions Log entries, or "none">
+- Output of the steps you need: <for each step in this step's Needs: files
+  touched + "Notes for next steps" from its result file, or "none">
 
 ## Rules you must follow
 
@@ -116,6 +121,10 @@ Terminal / session name: orch-s<N>-<short-name>
 - On ambiguity, an architectural choice, or any destructive action: emit
   escalate_to_lead (references/escalate-to-lead-schema.md) in this terminal,
   mark the step Blocked in your result file, and stop.
+- Everything you need is in this brief. Do not read .dev/orchestrator.md or
+  other steps' briefs/results.
+- If the Lead answers an escalation in this terminal, record the question and
+  answer under `Lead decisions` in your result file.
 - Do not edit .dev/orchestrator.md. When done (or blocked),
   write .dev/tasks/step-<N>-<short-name>.result.md using the result format.
 ```
@@ -128,9 +137,10 @@ Terminal / session name: orch-s<N>-<short-name>
 - Status: Complete | Blocked | Failed
 - needs-file: <path, only if Blocked because a file outside your owned files must change>
 - Files touched: <paths>
-- Research used: <one line per Research Sub-agent: question -> synthesis; note whether graphify was used>
+- Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no. Not the full synthesis.>
+- Lead decisions: <escalations the Lead answered in this terminal, question -> answer, or none>
 - Open questions / escalations: <none, or the escalate_to_lead payload>
-- Notes for next steps: <anything later steps need to know>
+- Notes for next steps: <at most ~5 lines that dependent steps need (new APIs, names, contracts)>
 ```
 
 ## Research Sub-agent brief template

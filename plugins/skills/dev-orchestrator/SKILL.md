@@ -61,7 +61,7 @@ exists. Full roles, permissions and briefing templates:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
 `rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
-`rules/high-parallel-disjoint-writes.md`.
+`rules/high-parallel-disjoint-writes.md`, `rules/high-scoped-context.md`.
 
 ## Workflow
 
@@ -142,8 +142,10 @@ for strictly sequential execution or moves steps between waves.
   3. Write the step brief to `.dev/tasks/step-[N]-[short-name].md` and start
      a full CLI session (e.g. `claude`) in the new terminal pointed at that
      brief. The brief contains ONLY that step's instructions, its owned
-     files, the steps running in parallel with it, the current scratchpad
-     contents, and the Task Agent rules -- never the chat history.
+     files, the steps running in parallel with it, a scoped slice of state
+     (task goal, decisions that affect the step, output of the steps it
+     needs) and the Task Agent rules -- never the full scratchpad and never
+     the chat history. See `rules/high-scoped-context.md`.
      Template: `references/agent-hierarchy.md`.
   4. Wait for every result file of the wave
      (`.dev/tasks/step-[N]-[short-name].result.md`), merge them into the
@@ -175,7 +177,9 @@ Agent's main context. Each Research Sub-agent:
 - first checks whether `graphify` is available in the project or system and,
   if so, uses it **before** manual searches or bulk reading to map AST,
   dependency graphs and relations between components,
-- returns a short synthesis to its Task Agent and ends,
+- starts with only its brief (question + scope), never a fork of the Task
+  Agent's conversation,
+- returns a short synthesis (~15 lines max) to its Task Agent and ends,
 - can never spawn another agent.
 
 Details: `references/graphify.md`, `rules/critical-research-read-only.md`.
@@ -213,6 +217,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
 - `rules/high-parallel-disjoint-writes.md` -- parallel only for independent steps with disjoint writes.
+- `rules/high-scoped-context.md` -- each agent gets only the context its step needs.
 
 ## References
 

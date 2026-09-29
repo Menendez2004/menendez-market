@@ -14,6 +14,9 @@ conversation memory.
   directory if it does not exist. This file is plain markdown so the Lead can
   open and read it directly at any time without tooling.
 - Task Agent briefs and results live in `.dev/tasks/` (create it if needed).
+- `.dev/` holds the Lead's task, decisions and agent notes, so it must not end
+  up in commits. If `.dev/` is not in `.gitignore`, ask the Lead to add it (or
+  confirm they want it tracked) before the first write.
 - **Only the Orchestrator writes the scratchpad.** Task Agents run in parallel
   terminals, so letting them edit one shared file would race. Each Task
   Agent writes its own `.dev/tasks/step-[N]-[short-name].result.md`; the
@@ -89,7 +92,14 @@ awaiting Lead".>
 ## Update discipline
 
 - **Before** launching a Task Agent or starting a step yourself: read the
-  whole file, and paste its current contents into the step's brief.
+  whole file yourself, but put in the step's brief only the scoped context
+  the brief template asks for (task goal, relevant decisions, output of the
+  steps it needs). Never paste the whole scratchpad or the chat history into
+  a brief: other steps' handoffs, unrelated decisions and research notes are
+  noise for that agent and grow with every step.
+- When merging a result file, keep the handoff short: status, files touched,
+  one line per research conclusion, and the notes for next steps. Merge any
+  `Lead decisions` into the `Decisions Log`.
 - **After** a step completes: merge the result file, append to `Decisions
   Log` if a Lead decision was involved, and update `Current Step`.
 - Never delete history from `Decisions Log` or `Task Agent Handoffs` -- both
