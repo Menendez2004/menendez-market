@@ -1,0 +1,20 @@
+{
+  "name": "menendez-market",
+  "owner": {
+    "name": "Menendez2004"
+  },
+  "plugins": [
+    {
+      "name": "dev-orchestrator",
+      "source": "./.claude-plugin/plugins/dev-orchestrator",
+      "description": "Human-in-the-loop flat orchestrator for development tasks: triages work as simple or complex, drafts a step-by-step plan for complex tasks using the strongest available model, then pauses to ask the Lead Developer whether to run it as a single session or dispatch flat (one-level, non-nesting) worker agents. Never guesses on ambiguity, architecture, or destructive/git actions -- always halts and escalates to the Lead via the escalate_to_lead protocol. Maintains a shared Context Scratchpad instead of passing full chat history to workers. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"flat orchestration\", or any multi-step dev task where the user asks how to run it.",
+      "version": "1.0.0"
+    },
+    {
+      "name": "qa-orchestrator",
+      "source": "./.claude-plugin/plugins/qa-orchestrator",
+      "description": "Orchestrate QA agent workflows — spawn test agents in parallel, collect results, triage bugs, trigger the bug fixer, and generate QA reports. The main entry point for running a QA session. Trigger on \"run QA\", \"start QA session\", \"test the PR\", \"orchestrate QA agents\", or when the user wants to run multiple QA agents together. Also triggered by /qa-orchestrator.",
+      "version": "1.0.0"
+    }
+  ]
+}
