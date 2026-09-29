@@ -10,19 +10,21 @@ conversation memory.
 
 ## Location and ownership
 
-- `.dito/orchestrator-scratchpad.md`, relative to the project root. Create
-  `.dito/` if it does not exist.
+- `orchestrator-scratchpad.md` at the project root, with Task Agent briefs
+  and results in `orchestrator-tasks/` next to it. Create that directory if
+  it does not exist. Both are working files: suggest the Lead add them to
+  `.gitignore` if they should not be committed.
 - **Only the Orchestrator writes the scratchpad.** Task Agents run in parallel
   terminals, so letting them edit one shared file would race. Each Task
-  Agent writes its own `.dito/tasks/step-[N]-[short-name].result.md`; the
+  Agent writes its own `orchestrator-tasks/step-[N]-[short-name].result.md`; the
   Orchestrator merges it into `Task Agent Handoffs`.
 - Research Sub-agents never write anything; their syntheses reach the
   scratchpad only through the Task Agent's result file.
 
 ```
-.dito/
+<project root>/
   orchestrator-scratchpad.md
-  tasks/
+  orchestrator-tasks/
     step-1-<short-name>.md          # brief (Orchestrator writes)
     step-1-<short-name>.result.md   # result (Task Agent writes)
     step-2-<short-name>.md
@@ -66,7 +68,7 @@ reworded. Mark independent steps, e.g. "(independent)".>
 
 ### Step <N>: <short step title>
 - Terminal: orchestrator-task-step-<N>-<short-name>
-- Brief: .dito/tasks/step-<N>-<short-name>.md
+- Brief: orchestrator-tasks/step-<N>-<short-name>.md
 - Status: <Running | Complete | Blocked | Failed>
 - Result: <files touched, tests run, research used (graphify yes/no), notes>
 ```
