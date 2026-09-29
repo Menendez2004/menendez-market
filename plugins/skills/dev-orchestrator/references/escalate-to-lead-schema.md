@@ -16,10 +16,20 @@ harness.
    `context` and `options` fields, so a human skimming the transcript
    doesn't need to parse JSON to understand what's being asked.
 3. Stop. Do not take any further action -- do not implement, do not move to
-   the next plan step, do not dispatch another worker -- until the Lead
+   the next plan step, do not launch another Task Agent -- until the Lead
    replies in plain text.
 4. Resume only once the Lead's reply resolves the `reason` this escalation
    was raised for.
+
+### Who escalates, and where
+
+- **Orchestrator (Level 0)**: escalates in the Lead's main session.
+- **Task Agent (Level 1)**: escalates in its own terminal
+  (`orchestrator-task-step-[N]-[short-name]`), where the Lead can answer it
+  directly, and also writes `Status: Blocked` plus the JSON payload to its
+  result file so the Orchestrator knows the step is halted.
+- **Research Sub-agent (Level 2)**: never escalates. It reports the open
+  question in its synthesis; the Task Agent decides whether to escalate.
 
 ### Claude Code fast path
 

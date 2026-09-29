@@ -2,17 +2,32 @@
 
 ## Purpose
 
-In multi-agent mode, worker agents must not receive the full chat history --
-only their own step's instructions plus whatever project state they actually
-need. The Context Scratchpad is that state: a single tracked file the
-orchestrator reads before every step and updates after every step, instead
-of relying on conversation memory.
+In multi-agent mode, Task Agents must not receive the full chat history --
+only their own step's instructions plus the project state they need. The
+Context Scratchpad is that state: a single tracked file the Orchestrator reads
+before every step and updates after every step, instead of relying on
+conversation memory.
 
-## Location
+## Location and ownership
 
-`.dito/orchestrator-scratchpad.md`, relative to the project root. Create the
-`.dito/` directory if it does not exist. This file is plain markdown so the
-Lead can open and read it directly at any time without tooling.
+- `.dito/orchestrator-scratchpad.md`, relative to the project root. Create
+  `.dito/` if it does not exist.
+- **Only the Orchestrator writes the scratchpad.** Task Agents run in parallel
+  terminals, so letting them edit one shared file would race. Each Task
+  Agent writes its own `.dito/tasks/step-[N]-[short-name].result.md`; the
+  Orchestrator merges it into `Task Agent Handoffs`.
+- Research Sub-agents never write anything; their syntheses reach the
+  scratchpad only through the Task Agent's result file.
+
+```
+.dito/
+  orchestrator-scratchpad.md
+  tasks/
+    step-1-<short-name>.md          # brief (Orchestrator writes)
+    step-1-<short-name>.result.md   # result (Task Agent writes)
+    step-2-<short-name>.md
+    ...
+```
 
 ## Format
 
@@ -25,35 +40,43 @@ Lead can open and read it directly at any time without tooling.
 
 ## Plan
 
-<The step-by-step plan generated during triage, as a numbered list. Empty /
-"N/A -- simple task" if triage classified this as simple.>
+Source: <Lead-provided | Orchestrator-proposed (opus), approved by Lead on <date> | Orchestrator, simple task>
+
+<The plan as a numbered list. If Lead-provided, copied verbatim -- never
+reworded. Mark independent steps, e.g. "(independent)".>
+
+## Environment
+
+- Execution mode: <single session | multi-agent (sequential) | multi-agent (parallel)>
+- User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
+- graphify: <available (existing graph / skill / CLI) | not available>
 
 ## Decisions Log
 
-<Append-only. One entry per Lead decision, in the form:>
+<Append-only. One entry per Lead decision:>
 - <YYYY-MM-DD HH:MM> -- <what was asked> -> <what the Lead decided>
 
 ## Current Step
 
-<Which plan step is in progress right now, or "Complete" / "Blocked,
-awaiting Lead" if applicable.>
+<Step in progress, or "Complete" / "Blocked, awaiting Lead".>
 
-## Worker Handoffs
+## Task Agent Handoffs
 
-<One subsection per worker dispatched, in the form:>
+<One subsection per step, in the form:>
 
 ### Step <N>: <short step title>
-- Dispatched: <what instructions the worker received>
-- Result: <what the worker reported back -- files touched, tests run, status>
+- Terminal: orchestrator-task-step-<N>-<short-name>
+- Brief: .dito/tasks/step-<N>-<short-name>.md
+- Status: <Running | Complete | Blocked | Failed>
+- Result: <files touched, tests run, research used (graphify yes/no), notes>
 ```
 
 ## Update discipline
 
-- **Before** dispatching a worker or starting a step yourself: read the
-  whole file so you have current state.
-- **After** a step completes (by you or a worker): append to `Decisions Log`
-  if a Lead decision was involved, update `Current Step`, and add a
-  `Worker Handoffs` subsection if a worker was involved.
-- Never delete history from `Decisions Log` or `Worker Handoffs` -- both are
-  append-only, so the Lead can always reconstruct how the project got to its
-  current state.
+- **Before** launching a Task Agent or starting a step yourself: read the
+  whole file, and paste its current contents into the step's brief.
+- **After** a step completes: merge the result file, append to `Decisions
+  Log` if a Lead decision was involved, and update `Current Step`.
+- Never delete history from `Decisions Log` or `Task Agent Handoffs` -- both
+  are append-only, so the Lead can always reconstruct how the project got to
+  its current state.
