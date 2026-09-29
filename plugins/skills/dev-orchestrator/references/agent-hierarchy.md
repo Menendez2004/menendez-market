@@ -36,6 +36,8 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Launches one Task Agent per plan step in the user's terminal
   (`references/terminal-launch.md`), then merges each result.
 - Never implements a step itself in multi-agent mode.
+- Runs the final checks once, after every step is complete, and never runs
+  tests (`rules/high-checks-not-tests.md`).
 
 ### Task Agent (Level 1)
 
@@ -44,6 +46,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Executes exactly **one** plan step: the one in its brief.
 - May modify code needed for that step (non-destructive changes only;
   destructive ones go through `escalate_to_lead`).
+- Never runs tests or checks; verification happens once at the end.
 - **Is allowed to** spawn Research Sub-agents via the inline `Agent` tool to
   investigate before editing, so exploration does not fill its own context.
 - Must not: launch other Task Agents, open terminals, touch other steps'
@@ -96,6 +99,9 @@ Terminal / session name: orch-s<N>-<short-name>
 - You MUST NOT launch other Task Agents, open terminals, or spawn any agent
   that can write.
 - Never commit, push, merge or open a PR. Leave changes uncommitted.
+- Never run tests, and do not run checks (lint, typecheck, build): the
+  Orchestrator runs checks once after the whole task. Writing test files is
+  fine if your step asks for it.
 - On ambiguity, an architectural choice, or any destructive action: emit
   escalate_to_lead (references/escalate-to-lead-schema.md) in this terminal,
   mark the step Blocked in your result file, and stop.
@@ -110,7 +116,6 @@ Terminal / session name: orch-s<N>-<short-name>
 
 - Status: Complete | Blocked | Failed
 - Files touched: <paths>
-- Tests / checks run: <commands and outcome>
 - Research used: <one line per Research Sub-agent: question -> synthesis; note whether graphify was used>
 - Open questions / escalations: <none, or the escalate_to_lead payload>
 - Notes for next steps: <anything later steps need to know>
@@ -121,7 +126,7 @@ Terminal / session name: orch-s<N>-<short-name>
 ```text
 You are a Level 2 Research Sub-agent. You are STRICTLY READ-ONLY: do not
 create, edit or delete files, do not run state-changing commands, do not use
-git to change anything, and do not spawn any agent.
+git to change anything, do not run tests, and do not spawn any agent.
 
 Question: <one focused question>
 Scope: <paths / services / logs to look at>

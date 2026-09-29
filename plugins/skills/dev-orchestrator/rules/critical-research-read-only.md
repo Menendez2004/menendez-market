@@ -35,7 +35,7 @@ The Task Agent applies the fix itself.
 **Rules:**
 
 - No `Edit`/`Write`, no file creation or deletion, no state-changing shell
-  commands, no git mutations, no package installs.
+  commands, no git mutations, no package installs, no test runs.
 - Before manual search or bulk reading, check for graphify
   (`references/graphify.md`); if present, use it first. Never build or
   rebuild a graph inside the project.

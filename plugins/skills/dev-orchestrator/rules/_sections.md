@@ -9,6 +9,12 @@ decision to the Lead Developer, instead of proceeding on its own judgment.
 - `critical-no-autonomous-git.md`
 - `high-adopt-lead-plan.md`
 
+## Verification
+
+Rules governing how finished work is verified.
+
+- `high-checks-not-tests.md`
+
 ## Agent Hierarchy
 
 Rules governing the two-level agent model: who may spawn whom, and what each

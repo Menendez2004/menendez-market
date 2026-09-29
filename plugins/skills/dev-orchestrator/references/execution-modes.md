@@ -69,7 +69,7 @@ After intake/planning the Orchestrator always asks the mandatory question
 (`SKILL.md` step 4). Never infer the answer from the task's size.
 
 - **Single session** -> the Orchestrator executes each step in order itself,
-  updating the scratchpad after each. It may use read-only Research
+  updating the scratchpad after each, then runs the final checks once. It may use read-only Research
   Sub-agents (`references/agent-hierarchy.md`).
 - **Multi-agent** -> for each step the Orchestrator:
   1. writes the brief `.dev/tasks/step-[N]-[short-name].md`
@@ -81,6 +81,18 @@ After intake/planning the Orchestrator always asks the mandatory question
   4. merges the result into the scratchpad, and only then launches the next
      step.
 
+  After the last step, the Orchestrator runs the final checks once (see
+  below).
+
   Steps run in parallel (several Task Agent terminals at once) only if the
   plan marks them independent AND the Lead approved parallel execution when
   asked the mandatory question.
+
+## 5. Final checks (once, at the end)
+
+In either mode, after every plan step is complete, the Orchestrator runs the
+project's fast checks once: lint, format check, typecheck, build/compile and
+the project's own validators, discovered from the project's scripts or CI
+config. It never runs test suites, and no check runs between steps. Results
+go to the scratchpad's `## Final Checks` section; failures are reported to
+the Lead with their output. See `rules/high-checks-not-tests.md`.

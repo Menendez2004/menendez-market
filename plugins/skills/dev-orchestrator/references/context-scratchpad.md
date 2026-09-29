@@ -71,7 +71,12 @@ reworded. Mark independent steps, e.g. "(independent)".>
 - Terminal: orch-s<N>-<short-name>
 - Brief: .dev/tasks/step-<N>-<short-name>.md
 - Status: <Running | Complete | Blocked | Failed>
-- Result: <files touched, tests run, research used (graphify yes/no), notes>
+- Result: <files touched, research used (graphify yes/no), notes>
+
+## Final Checks
+
+<Filled once, after every step is complete. One line per check:>
+- <command> -> <ok | failed: short summary>
 ```
 
 ## Update discipline

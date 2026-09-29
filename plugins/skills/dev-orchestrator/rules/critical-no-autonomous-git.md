@@ -4,11 +4,11 @@ impact: CRITICAL
 tags: [escalation, hitl, git, destructive-action]
 ---
 
-**Incorrect (Task Agent finishes a step):**
+**Incorrect (Orchestrator finishes the task):**
 
 ```
-A Task Agent finishes implementing step 2, runs the tests, sees them pass,
-and then runs:
+All plan steps are done and the Orchestrator's final checks (lint,
+typecheck, build) pass. It then runs:
 
   git add .
   git commit -m "feat: add rate limiting"
@@ -17,23 +17,23 @@ and then runs:
 ...on its own judgment, because the change looked complete and correct.
 ```
 
-Even a correct, well-tested change is not the agent's call to land. Pushing
-mutates shared state every other collaborator sees.
+Even a correct change with green checks is not the agent's call to land.
+Pushing mutates shared state every other collaborator sees. The same applies
+to a Task Agent finishing its step.
 
-**Correct (Task Agent finishes the same step):**
+**Correct (same situation):**
 
 ```
-The Task Agent finishes implementing step 2, runs the tests, confirms they pass,
-leaves the change uncommitted, writes its result file with
-"Status: Complete, tests passing, ready for review," and hands control back to
-the orchestrator. The orchestrator then emits:
+Every Task Agent left its changes uncommitted and wrote its result file.
+The Orchestrator runs the final checks, records them in the scratchpad, and
+emits:
 
 escalate_to_lead({
   "reason": "destructive_action",
-  "context": "Step 2 (add rate limiting) is implemented and tests pass. Ready
-              to commit and push.",
+  "context": "All 3 steps are implemented and the final checks (lint,
+              typecheck, build) pass. Ready to commit and push.",
   "options": ["Commit and push now", "Hold -- I want to review the diff
-              first", "Squash with step 1 before committing"],
+              first", "Squash into a single commit first"],
   "blocking": true
 })
 
