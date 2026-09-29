@@ -19,7 +19,7 @@ Marketplace de plugins para Claude Code.
 
 | Plugin | Descripción |
 | --- | --- |
-| `dev-orchestrator` | Orquestador de desarrollo con humano en el loop: clasifica tareas, planifica y delega a agentes worker planos, escalando al Lead ante ambigüedad o acciones destructivas. |
+| `dev-orchestrator` | Orquestador de desarrollo con humano en el loop y jerarquía de 2 niveles: adopta el plan del Lead (o propone uno con opus si no hay), lanza un Task Agent por paso en su propia terminal y cada uno puede usar subagentes de research read-only que priorizan graphify. Escala al Lead ante ambigüedad o acciones destructivas. |
 | `qa-orchestrator` | Orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes. |
 
 ## Estructura
