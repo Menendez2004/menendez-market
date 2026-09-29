@@ -14,7 +14,7 @@ orchestrator-task-step-[N]-[short-name]
 - `[short-name]`: 2-4 words from the step title, lowercase kebab-case,
   ASCII only, max ~30 chars. Example: `orchestrator-task-step-3-migrate-users-table`.
 - Use the same name for the terminal title, the brief file
-  (`.dito/tasks/step-[N]-[short-name].md`), the result file and the
+  (`orchestrator-tasks/step-[N]-[short-name].md`), the result file and the
   scratchpad entry.
 
 ## 2. Detect the user's terminal
@@ -54,7 +54,7 @@ Shared variables (run from the project root):
 
 ```bash
 NAME="orchestrator-task-step-2-add-rate-limit"
-BRIEF=".dito/tasks/step-2-add-rate-limit.md"
+BRIEF="orchestrator-tasks/step-2-add-rate-limit.md"
 CMD="claude 'Read $BRIEF and execute it exactly as written.'"
 ```
 
@@ -120,7 +120,7 @@ without the Lead agreeing to switch to single-session mode.
 
 ## 5. Waiting for completion
 
-The Orchestrator waits for `.dito/tasks/step-[N]-[short-name].result.md` to
+The Orchestrator waits for `orchestrator-tasks/step-[N]-[short-name].result.md` to
 exist (poll with a reasonable interval, or use the harness's background
 monitor). Then it reads the result, merges it into the scratchpad, and
 either launches the next step or, if `Status: Blocked`, surfaces the
