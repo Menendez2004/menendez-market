@@ -85,6 +85,14 @@ Terminal / session name: orch-s<N>-<short-name>
 
 <The step text, copied verbatim from the plan.>
 
+## Owned files
+
+<The step's Writes from the dependency map. You may edit only these.>
+
+## Running in parallel with you
+
+<Other steps in this wave and their owned files, or "none".>
+
 ## Current project state
 
 <Full current contents of .dev/orchestrator.md.>
@@ -98,6 +106,9 @@ Terminal / session name: orch-s<N>-<short-name>
   no further agents, short synthesis.
 - You MUST NOT launch other Task Agents, open terminals, or spawn any agent
   that can write.
+- Edit only your owned files. If you must edit anything else, do not edit
+  it: mark the step Blocked with `needs-file: <path>` in your result file and
+  stop (other agents may be editing it right now).
 - Never commit, push, merge or open a PR. Leave changes uncommitted.
 - Never run tests, and do not run checks (lint, typecheck, build): the
   Orchestrator runs checks once after the whole task. Writing test files is
@@ -115,6 +126,7 @@ Terminal / session name: orch-s<N>-<short-name>
 # Result -- step <N>: <short step title>
 
 - Status: Complete | Blocked | Failed
+- needs-file: <path, only if Blocked because a file outside your owned files must change>
 - Files touched: <paths>
 - Research used: <one line per Research Sub-agent: question -> synthesis; note whether graphify was used>
 - Open questions / escalations: <none, or the escalate_to_lead payload>

@@ -20,8 +20,8 @@ Validation checks the plan is executable as written; it does not edit it.
 - Every step is concrete enough to hand to one Task Agent in a brief.
 - Referenced files, services, commands and branches exist (quick read-only
   check, a Research Sub-agent may help).
-- Dependencies between steps are clear (which steps are independent and
-  could run in parallel).
+- Dependencies between steps are clear enough to build the dependency map
+  (`references/parallelization.md`).
 - No step requires an undeclared destructive action or git mutation.
 
 Outcomes:
@@ -66,27 +66,30 @@ what one Task Agent receives.
 ## 4. Execution-mode routing
 
 After intake/planning the Orchestrator always asks the mandatory question
-(`SKILL.md` step 4). Never infer the answer from the task's size.
+(`SKILL.md` step 5), after showing the dependency map
+(`references/parallelization.md`). Never infer the answer from the task's size.
 
 - **Single session** -> the Orchestrator executes each step in order itself,
   updating the scratchpad after each, then runs the final checks once. It may use read-only Research
   Sub-agents (`references/agent-hierarchy.md`).
-- **Multi-agent** -> for each step the Orchestrator:
+- **Multi-agent** -> wave by wave; for each step of the current wave the
+  Orchestrator:
   1. writes the brief `.dev/tasks/step-[N]-[short-name].md`
      (template in `references/agent-hierarchy.md`),
   2. opens a new terminal in the user's terminal app named
      `orch-s[N]-[short-name]` and starts an independent CLI
      session on that brief (`references/terminal-launch.md`),
-  3. waits for `.dev/tasks/step-[N]-[short-name].result.md`,
-  4. merges the result into the scratchpad, and only then launches the next
-     step.
+  3. waits for every `.dev/tasks/step-[N]-[short-name].result.md` of the
+     wave,
+  4. merges the results into the scratchpad, and only then launches the
+     next wave.
 
   After the last step, the Orchestrator runs the final checks once (see
   below).
 
-  Steps run in parallel (several Task Agent terminals at once) only if the
-  plan marks them independent AND the Lead approved parallel execution when
-  asked the mandatory question.
+  Steps of the same wave run in parallel (several Task Agent terminals at
+  once). Waves come from the dependency map the Lead saw at the mandatory
+  pause; if the Lead asked for sequential, every wave has one step.
 
 ## 5. Final checks (once, at the end)
 

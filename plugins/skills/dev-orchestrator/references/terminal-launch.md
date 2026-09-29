@@ -121,8 +121,9 @@ without the Lead agreeing to switch to single-session mode.
 
 ## 5. Waiting for completion
 
-The Orchestrator waits for `.dev/tasks/step-[N]-[short-name].result.md` to
-exist (poll with a reasonable interval, or use the harness's background
-monitor). Then it reads the result, merges it into the scratchpad, and
-either launches the next step or, if `Status: Blocked`, surfaces the
-escalation to the Lead and halts.
+The Orchestrator waits for the `.dev/tasks/step-[N]-[short-name].result.md`
+file of every step in the current wave (poll with a reasonable interval, or
+use the harness's background monitor). Then it merges the results into the
+scratchpad and launches the next wave (`references/parallelization.md`). If a
+result says `Blocked` with `needs-file`, it reschedules that step; any other
+`Blocked` result is surfaced to the Lead and execution halts.

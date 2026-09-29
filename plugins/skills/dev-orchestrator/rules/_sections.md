@@ -22,6 +22,7 @@ level may touch.
 
 - `critical-max-two-levels.md`
 - `critical-research-read-only.md`
+- `high-parallel-disjoint-writes.md`
 
 ## Impact levels
 

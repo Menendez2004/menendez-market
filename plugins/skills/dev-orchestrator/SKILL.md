@@ -11,7 +11,9 @@ description: >-
   the terminal the user is actually using) per plan step; each Task Agent may
   spawn ephemeral read-only Research Sub-agents that prefer graphify when it
   is available. Hard limit: 2 levels below the orchestrator, no deeper. No
-  agent runs tests; the orchestrator runs checks once at the end. Never
+  agent runs tests; the orchestrator runs checks once at the end. It maps
+  step dependencies and runs independent steps with disjoint file writes in
+  parallel waves. Never
   guesses on ambiguity, architecture, or destructive/git actions -- always
   halts and escalates to the Lead via the escalate_to_lead protocol.
   Maintains a shared Context Scratchpad instead of passing chat history.
@@ -58,7 +60,8 @@ exists. Full roles, permissions and briefing templates:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
-`rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`.
+`rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
+`rules/high-parallel-disjoint-writes.md`.
 
 ## Workflow
 
@@ -82,7 +85,7 @@ check for a **Lead-provided plan** in:
 
 - **Simple**: a single, well-scoped change with no ambiguity and one
   reasonable implementation (e.g. "rename this function", "fix this failing
-  test"). It becomes a one-step plan; go to step 4.
+  test"). It becomes a one-step plan; go to step 5.
 - **Complex**: spans multiple files/components, needs a design decision,
   touches shared/production state, or has more than one reasonable approach.
   Go to step 3.
@@ -97,35 +100,58 @@ Either propose a plan generated with `model: "opus"` (a single planning-only
 before it counts as the plan. Record it with `Source: Orchestrator-proposed
 (opus), approved by Lead on <date>`.
 
-### 4. Mandatory pause
+### 4. Map dependencies and parallel waves
 
-Before any execution, ask the Lead this question verbatim and wait for the
-answer -- do not assume a default:
+For plans with more than one step, work out which steps can run at the same
+time and which are co-dependent. For each step, record what it writes,
+reads, and needs from other steps, plus any single-writer hotspot it touches
+(lockfiles, manifests, migrations, generated/index files, global config).
+Use a read-only Research Sub-agent (graphify first) to pin down footprints.
+
+- **Co-dependent**: one needs the other's output, their writes overlap, they
+  share a hotspot, a footprint is unknown, or the plan orders them.
+- **Independent**: none of the above.
+
+Group independent steps into **waves** (default max 4 per wave). This is
+scheduling only: the plan's steps stay exactly as the Lead wrote them.
+Record the map in the scratchpad. Method: `references/parallelization.md`;
+rule: `rules/high-parallel-disjoint-writes.md`.
+
+### 5. Mandatory pause
+
+Show the Lead the dependency map (waves and co-dependencies), then ask this
+question verbatim and wait for the answer -- do not assume a default:
 
 > "Do you want to run this as a single session, or use multi-agents?"
 
-### 5. Execute
+In multi-agent mode the waves shown are the schedule, unless the Lead asks
+for strictly sequential execution or moves steps between waves.
+
+### 6. Execute
 
 - **Single session**: you perform each plan step yourself, in order. You may
   still use read-only Research Sub-agents for investigation (they are then
   Level 1, still read-only and still unable to spawn).
-- **Multi-agent**: for each plan step, launch **one independent Task Agent**:
+- **Multi-agent**: run the plan wave by wave. For each step in the current
+  wave, launch **one independent Task Agent** (all steps of a wave at once):
   1. Detect which terminal the user is using and open a new tab/window/pane
-     there -- `references/terminal-launch.md`.
+     there -- `references/parallelization.md` -- dependency map, co-dependency, parallel waves.
+- `references/terminal-launch.md`.
   2. Name it exactly `orch-s[N]-[short-name]` (kebab-case,
      e.g. `orch-s2-ratelimit`).
   3. Write the step brief to `.dev/tasks/step-[N]-[short-name].md` and start
      a full CLI session (e.g. `claude`) in the new terminal pointed at that
-     brief. The brief contains ONLY that step's instructions, the current
-     scratchpad contents, and the Task Agent rules -- never the chat history.
+     brief. The brief contains ONLY that step's instructions, its owned
+     files, the steps running in parallel with it, the current scratchpad
+     contents, and the Task Agent rules -- never the chat history.
      Template: `references/agent-hierarchy.md`.
-  4. Wait for the Task Agent's result file
-     `.dev/tasks/step-[N]-[short-name].result.md`, merge it into the
-     scratchpad, then launch the next step. Steps run in parallel only if the
-     plan marks them independent AND the Lead approved parallel execution in
-     step 4.
+  4. Wait for every result file of the wave
+     (`.dev/tasks/step-[N]-[short-name].result.md`), merge them into the
+     scratchpad, then launch the next wave. A Task Agent that needs a file
+     outside its owned files stops with `Blocked` + `needs-file`; reschedule
+     that step instead of letting two agents edit the same file.
 
-### 6. Final checks -- never tests
+### 7. Final checks -- never tests
 
 No agent in this skill runs tests: not the Orchestrator, not a Task Agent,
 not a Research Sub-agent. Writing or editing test files is fine when a plan
@@ -138,7 +164,7 @@ Agents do not run checks per step. If a check fails, report the output to
 the Lead and ask how to proceed; do not loop on fixes on your own. Details:
 `rules/high-checks-not-tests.md`.
 
-### 7. Research Sub-agents and graphify
+### 8. Research Sub-agents and graphify
 
 Task Agents investigate **before** modifying code by spawning ephemeral
 Research Sub-agents through the inline `Agent` tool (read-only type such as
@@ -154,14 +180,14 @@ Agent's main context. Each Research Sub-agent:
 
 Details: `references/graphify.md`, `rules/critical-research-read-only.md`.
 
-### 8. Context Scratchpad
+### 9. Context Scratchpad
 
 `.dev/orchestrator.md` is the single shared source of project
 state. Only you (the Orchestrator) write it; Task Agents write their own
 `.result.md` file and you merge it. Read it before every step; update it
 after every step. Format: `references/context-scratchpad.md`.
 
-### 9. Escalation -- ask the Lead, never guess
+### 10. Escalation -- ask the Lead, never guess
 
 Trigger `escalate_to_lead` immediately, and halt until the Lead responds, on
 any of:
@@ -186,6 +212,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-no-autonomous-git.md` -- no autonomous git/PR actions.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
+- `rules/high-parallel-disjoint-writes.md` -- parallel only for independent steps with disjoint writes.
 
 ## References
 
