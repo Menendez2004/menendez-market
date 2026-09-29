@@ -186,6 +186,11 @@ else
   ok "Created .gitignore"
 fi
 
+if ! grep -q "^\.dev/\?$" "$GITIGNORE" 2>/dev/null; then
+  echo -e "\n# QA run state (full agent outputs)\n.dev/" >> "$GITIGNORE"
+  ok "Added .dev/ to .gitignore"
+fi
+
 # ── Done ──────────────────────────────────────────────────────
 
 echo ""

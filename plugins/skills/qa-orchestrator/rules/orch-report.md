@@ -10,7 +10,9 @@ tags:
 
 ## Rule
 
-Every QA run must produce a report saved to `.qa/reports/YYYY-MM-DD-HHmmss-qa-report.md` with sections: Summary, Agent Results, Bugs Found table, Bug Details (if no issue tracker), Fixes Applied (if bug-fixer ran), and Verdict (PASS or FAIL).
+Every QA run must produce a report saved to `.qa/reports/YYYY-MM-DD-HHmmss-qa-report.md` with sections: Summary, Agent Results, Bugs Found table, Bug Details (if no issue tracker), Fixes Applied (if bug-fixer ran), Decisions (if the user answered anything during the run), and Verdict (PASS or FAIL).
+
+Agent Results holds one line per scenario, not each agent's full output: that stays in `.dev/qa/<run-id>/`, which is not committed. The report is committed, so credentials are redacted (`rules/orch-no-secrets-in-output.md`).
 
 **Incorrect (QA report):**
 
@@ -32,11 +34,14 @@ QA done. Found 2 bugs. See the agent outputs above.
 - **Result:** FAIL (2 bugs found)
 
 ## Agent Results
-### qa-happy-path
-[full structured output]
+### qa-happy-path — 4/5 flows passed
+- PASS Flow 1 — Login
+- FAIL Flow 3 — Checkout redirect (bug #2)
+- ...
 
-### qa-api-adversary
-[full structured output]
+### qa-api-adversary — 9/10 tests passed
+- FAIL POST /api/orders zero quantity (bug #1)
+- ...
 
 ## Bugs Found
 | # | Agent | Severity | Description | Issue | Status |
@@ -49,6 +54,10 @@ QA done. Found 2 bugs. See the agent outputs above.
 **Root cause:** Missing quantity validation
 **Files changed:** OrderService.java
 **Risk:** LOW
+
+## Decisions
+- Triage: user chose qa-debugger for HIGH+ bugs
+- qa-happy-path terminal: user confirmed the staging tenant is `acme-test`
 
 ## Verdict
 **FAIL** — 1 unresolved bug remains (LIN-457)
