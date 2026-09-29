@@ -46,11 +46,16 @@ conversation memory.
 Source: <Lead-provided | Orchestrator-proposed (opus), approved by Lead on <date> | Orchestrator, simple task>
 
 <The plan as a numbered list. If Lead-provided, copied verbatim -- never
-reworded. Mark independent steps, e.g. "(independent)".>
+reworded.>
+
+## Dependency Map
+
+<Per step: writes, reads, needs, hotspots. Then the waves and the
+co-dependencies, as shown to the Lead (references/parallelization.md).>
 
 ## Environment
 
-- Execution mode: <single session | multi-agent (sequential) | multi-agent (parallel)>
+- Execution mode: <single session | multi-agent (sequential) | multi-agent (waves)>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
 - graphify: <available (existing graph / skill / CLI) | not available>
 
@@ -61,7 +66,8 @@ reworded. Mark independent steps, e.g. "(independent)".>
 
 ## Current Step
 
-<Step in progress, or "Complete" / "Blocked, awaiting Lead".>
+<Current wave and its steps in progress, or "Complete" / "Blocked,
+awaiting Lead".>
 
 ## Task Agent Handoffs
 
@@ -70,6 +76,7 @@ reworded. Mark independent steps, e.g. "(independent)".>
 ### Step <N>: <short step title>
 - Terminal: orch-s<N>-<short-name>
 - Brief: .dev/tasks/step-<N>-<short-name>.md
+- Wave: <W>, owned files: <paths>
 - Status: <Running | Complete | Blocked | Failed>
 - Result: <files touched, research used (graphify yes/no), notes>
 
