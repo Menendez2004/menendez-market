@@ -7,7 +7,7 @@ description: >-
   does it propose one with the strongest model ("opus") or ask the Lead for
   one. Then pauses to ask whether to run as a single session or multi-agent.
   In multi-agent mode it launches one independent Task Agent (a full CLI
-  session in its own terminal, named orchestrator-task-step-N-name, opened in
+  session in its own terminal, named orch-sN-name, opened in
   the terminal the user is actually using) per plan step; each Task Agent may
   spawn ephemeral read-only Research Sub-agents that prefer graphify when it
   is available. Hard limit: 2 levels below the orchestrator, no deeper. Never
@@ -111,8 +111,8 @@ answer -- do not assume a default:
 - **Multi-agent**: for each plan step, launch **one independent Task Agent**:
   1. Detect which terminal the user is using and open a new tab/window/pane
      there -- `references/terminal-launch.md`.
-  2. Name it exactly `orchestrator-task-step-[N]-[short-name]` (kebab-case,
-     e.g. `orchestrator-task-step-2-add-rate-limit`).
+  2. Name it exactly `orch-s[N]-[short-name]` (kebab-case,
+     e.g. `orch-s2-ratelimit`).
   3. Write the step brief to `orchestrator-tasks/step-[N]-[short-name].md` and start
      a full CLI session (e.g. `claude`) in the new terminal pointed at that
      brief. The brief contains ONLY that step's instructions, the current

@@ -40,7 +40,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 ### Task Agent (Level 1)
 
 - An independent, full CLI session running in its own terminal named
-  `orchestrator-task-step-[N]-[short-name]`.
+  `orch-s[N]-[short-name]`.
 - Executes exactly **one** plan step: the one in its brief.
 - May modify code needed for that step (non-destructive changes only;
   destructive ones go through `escalate_to_lead`).
@@ -76,7 +76,7 @@ launching the terminal:
 ```markdown
 # Task Agent brief -- step <N>: <short step title>
 
-Terminal / session name: orchestrator-task-step-<N>-<short-name>
+Terminal / session name: orch-s<N>-<short-name>
 
 ## Your step (do only this)
 

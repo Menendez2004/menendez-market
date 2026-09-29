@@ -75,7 +75,7 @@ After intake/planning the Orchestrator always asks the mandatory question
   1. writes the brief `orchestrator-tasks/step-[N]-[short-name].md`
      (template in `references/agent-hierarchy.md`),
   2. opens a new terminal in the user's terminal app named
-     `orchestrator-task-step-[N]-[short-name]` and starts an independent CLI
+     `orch-s[N]-[short-name]` and starts an independent CLI
      session on that brief (`references/terminal-launch.md`),
   3. waits for `orchestrator-tasks/step-[N]-[short-name].result.md`,
   4. merges the result into the scratchpad, and only then launches the next

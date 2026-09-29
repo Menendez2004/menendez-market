@@ -7,12 +7,13 @@ so the Lead can watch and interact with each step where they already work.
 ## 1. Naming (mandatory)
 
 ```
-orchestrator-task-step-[N]-[short-name]
+orch-s[N]-[short-name]
 ```
 
 - `[N]`: the plan step number (1-based, no padding).
-- `[short-name]`: 2-4 words from the step title, lowercase kebab-case,
-  ASCII only, max ~30 chars. Example: `orchestrator-task-step-3-migrate-users-table`.
+- `[short-name]`: 1-2 words from the step title, lowercase kebab-case,
+  ASCII only, max ~10 chars, so the whole name stays around 10-15 chars and
+  fits in a tab title. Examples: `orch-s1-auth`, `orch-s3-migrate`.
 - Use the same name for the terminal title, the brief file
   (`orchestrator-tasks/step-[N]-[short-name].md`), the result file and the
   scratchpad entry.
@@ -53,8 +54,8 @@ reuse it for every step. If detection is ambiguous, ask the Lead once
 Shared variables (run from the project root):
 
 ```bash
-NAME="orchestrator-task-step-2-add-rate-limit"
-BRIEF="orchestrator-tasks/step-2-add-rate-limit.md"
+NAME="orch-s2-ratelimit"
+BRIEF="orchestrator-tasks/step-2-ratelimit.md"
 CMD="claude 'Read $BRIEF and execute it exactly as written.'"
 ```
 
