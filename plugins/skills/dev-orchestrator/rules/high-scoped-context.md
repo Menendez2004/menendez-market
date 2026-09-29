@@ -1,0 +1,46 @@
+---
+title: Give each agent only the context its step needs
+impact: HIGH
+tags: [context, briefs, task-agent, research-subagent, scratchpad]
+---
+
+**Incorrect (launching step 5 of 6):**
+
+```
+The Orchestrator pastes the whole .dev/orchestrator.md into step 5's brief:
+the Lead's full original message, every Decisions Log entry, the handoffs
+of steps 1-4 with their full research syntheses, and the dependency map.
+The Task Agent for step 5 then spawns a Research Sub-agent as a fork of its
+own conversation, so the sub-agent starts with all of that too.
+```
+
+Step 5 needed one function name from step 3. Everything else is noise that
+grows with every step, and it can steer the agent toward other steps' work.
+
+**Correct (same launch):**
+
+```
+Step 5's brief contains: its step text, owned files, parallel peers, a
+two-line task goal, the one decision about error codes that affects it, and
+step 3's "Notes for next steps" (the new function name). The Research
+Sub-agent it spawns is a fresh read-only Explore agent whose brief is one
+question and a scope, and it returns ~10 lines.
+```
+
+**Rules:**
+
+- A Task Agent brief carries only: its step, owned files, parallel peers, the
+  task goal, decisions that affect this step, and the output of the steps it
+  `Needs`. Never the full scratchpad, never the chat history.
+- Task Agents do not read the scratchpad or other steps' briefs and results.
+- Research Sub-agents start from their brief alone (no fork of the parent's
+  conversation) and return a short synthesis; result files keep one line per
+  research conclusion, not the synthesis.
+- Lead answers given in a Task Agent's terminal go into its result file so
+  the Orchestrator can log them; decisions never live only in one terminal.
+- `.dev/` stays out of commits (in `.gitignore`, or the Lead confirms).
+
+**Why it matters:** Isolating each step is the reason Task Agents and
+Research Sub-agents exist. Passing everything to everyone rebuilds the
+shared, ever-growing context the design is meant to avoid, costs tokens on
+every launch, and lets one step's details leak into another step's choices.
