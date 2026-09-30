@@ -129,7 +129,7 @@ After all questions answered:
      Skill: .claude/skills/qa-<name>/SKILL.md
      Registered in: .qa/config.yml
 
-   It will be included in future /qa-run sessions.
+   It will be included in future /qa-orchestrator sessions.
    Edit the SKILL.md directly to refine test scenarios.
    ```
 

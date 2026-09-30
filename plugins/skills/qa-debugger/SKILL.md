@@ -87,6 +87,10 @@ Workflow:
 3. Verify the changed files match the fix report
 4. Report whether the fix is sound or needs revision
 
+## When Spawned by qa-orchestrator
+
+The brief is your whole context: only the bugs selected for fixing, each with its reproduction. Do not read other agents' run files or earlier QA reports. Write your full fix reports to the run file the brief gives (`.dev/qa/<run-id>/qa-debugger.md`) and return only one line per bug (fixed or not, files changed, risk). Redact credentials as `<redacted:KEY>` in every report and tracker comment.
+
 ## Constraints
 
 - Only fix bugs reported by QA agents in the current run
@@ -113,9 +117,9 @@ After implementing a fix, read `.qa/config.yml` to check for an issue tracker.
 
 If an issue ticket was created by the QA agent:
 - **Linear**: add a comment with the fix report using `mcp__linear__save_comment`
-- **Jira**: add a new comment whit the fix report usind `mcp__plugin_atlassian_atlassian__addCommentToJiraIssue`
+- **Jira**: add a new comment with the fix report using `mcp__plugin_atlassian_atlassian__addCommentToJiraIssue`
 - **GitHub**: add a comment using `mcp__github__add_issue_comment`
-- **None**: create a md to include the full fix report 
+- **None**: include the full fix report in your output; qa-orchestrator adds it to the QA report
 
 ## What You Do NOT Do
 

@@ -10,7 +10,7 @@ tags:
 
 ## Rule
 
-Every custom QA personality must be a valid Vercel Agent Skill with: YAML frontmatter (name, description, allowed-tools, metadata), persona section, test scenarios from `.qa/test-plan.md`, structured output format, multi-provider bug reporting, and Troubleshooting section.
+Every custom QA personality must be a valid Vercel Agent Skill with: YAML frontmatter (name, description, allowed-tools, metadata), persona section, test scenarios from `.qa/test-plan.md`, structured output format, multi-provider bug reporting, a "When Spawned by qa-orchestrator" section, and Troubleshooting section.
 
 **Incorrect (personality structure):**
 
@@ -57,6 +57,11 @@ Read `.qa/test-plan.md` for webhook flows...
 ## Bug Reporting
 Read `.qa/config.yml` to determine issue tracker...
 [multi-provider block]
+
+## When Spawned by qa-orchestrator
+Use only the brief. Write full output to `.dev/qa/<run-id>/qa-webhook-tester.md`,
+return a short summary, emit STOPPED_EARLY on a BLOCKER, redact credentials
+as `<redacted:KEY>`.
 
 ## Troubleshooting
 - Error: [error]

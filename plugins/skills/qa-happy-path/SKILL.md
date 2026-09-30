@@ -53,7 +53,7 @@ Every test run must comply with rules in the `rules/` directory. See `rules/_sec
 
 ## Mode A — Execute Test Plan
 
-1. Read `.qa/test-plan.md` and `.env.qa` before starting
+1. Read the `## UI Flows` section of `.qa/test-plan.md` and the `.env.qa` keys you need (`QA_PORTAL_URL`, test user credentials). When spawned by qa-orchestrator, use only what the brief gives you
 2. Identify all flows tagged `type: ui` or `type: happy-path`. If no tags exist, test all flows involving browser interaction
 3. Navigate to the app URL (`QA_PORTAL_URL` from `.env.qa`)
 4. Log in as the test user (`QA_TEST_USER_EMAIL` / `QA_TEST_USER_PASSWORD`)
@@ -61,7 +61,7 @@ Every test run must comply with rules in the `rules/` directory. See `rules/_sec
 6. After each action: take a snapshot to verify UI state
 7. After form submits or API-triggering actions: check network requests to confirm success
 8. Report pass or fail for each step with a brief reason
-9. If a bug is found: follow the bug reporting rules in `rules/rpt-bug.md`
+9. If a bug is found: follow the bug reporting rules in `rules/bug-report.md`
 
 ## Mode B — Ad-hoc Flow Test
 
@@ -79,7 +79,7 @@ Every test run must comply with rules in the `rules/` directory. See `rules/_sec
 
 - Do not look at implementation source code
 - Do not fix bugs — report them clearly with reproduction steps
-- Do not test error cases — that is the Chaos Monkey's job
+- Do not test error cases — that is qa-api-adversary's job
 - Do not assume backend state without explicit verification
 
 ## Output Format
@@ -96,13 +96,23 @@ For each flow:
 **Notes:** [anything unusual]
 ```
 
+Never write passwords, tokens or cookies in the output; use `<redacted:KEY>`.
+
+## When Spawned by qa-orchestrator
+
+The orchestrator's brief is your whole context:
+- Test only the UI flows in the brief. Read only the `.env.qa` keys it names; never copy their values into your output.
+- Write your full output to the run file the brief gives (`.dev/qa/<run-id>/qa-happy-path.md`). If the user answers something in your terminal, add it there under `## User decisions`.
+- Return only a short summary: PASS/FAIL counts, one line per flow, one line per bug (severity, title, issue URL), and the `STOPPED_EARLY` signal if you stopped.
+- Redact credentials everywhere, as `<redacted:KEY>`.
+
 ## Workflow
 
 1. **Detect mode** — match to A/B/C; ask if ambiguous
-2. **Load configuration** — read `.qa/test-plan.md`, `.env.qa`, `.qa/config.yml`
+2. **Load configuration** — read the brief, or your section of `.qa/test-plan.md`, the `.env.qa` keys you need, and `.qa/config.yml`
 3. **Execute tests** — navigate, interact, snapshot, verify per mode
 4. **Report results** — structured output per flow with pass/fail
-5. **File bugs** — follow `rules/rpt-bug.md` for any failures
+5. **File bugs** — follow `rules/bug-report.md` for any failures
 
 ## Examples
 
