@@ -142,9 +142,30 @@ Record the map, the preview and the cap in the scratchpad's
   `references/terminal-launch.md` section 5.
 - When a result arrives, merge it into the scratchpad first, then apply the
   launch rule, so newly launched steps see the new state in their briefs.
+- **Refresh stale research before a launch.** The footprint research was
+  taken before any step ran. Before writing a brief, compare the Files
+  touched of every step completed since that research with this step's
+  Reads and Writes. If they overlap, run one Research Sub-agent on the
+  overlapping files first (its brief lists them as "changed since the
+  graph was built"), rewrite `.dev/research/step-[N]-[short-name].md` with
+  a new `Taken after:` header, and use the refreshed findings. If they do
+  not overlap, launch with the existing research; the brief still lists
+  what completed since.
+- **Lead decisions reach running steps.** Whenever a Lead decision is logged
+  (from a result's `Lead decisions` or from an escalation you raised),
+  append it to `.dev/tasks/_decisions.md` right away. Task Agents re-read
+  that file before writing their result. If the decision plausibly affects
+  a step that is already running, tell the Lead which step and why, so they
+  can also answer in that step's terminal. When that step's result arrives,
+  check it against the decision before launching its dependents.
+- **Every relaunch carries a `## Previous attempt` section** (template in
+  `references/agent-hierarchy.md`): the previous result and
+  `git diff --stat -- <owned files>` (read-only). A fresh session never
+  starts a step blind to its own earlier edits.
 - **`Blocked` with `needs-file: <path>`**: the step does not edit that file.
   Wait until no running step owns the path, add it to the step's owned
-  files, log it in the scratchpad, and relaunch the step.
+  files, log it in the scratchpad, and relaunch the step with a
+  `## Previous attempt` section.
 - **Any other `Blocked`, or `Failed`**: surface it to the Lead, and hold
   only the steps that depend on it (directly or transitively). Steps that
   do not depend on it keep running, and new independent steps keep

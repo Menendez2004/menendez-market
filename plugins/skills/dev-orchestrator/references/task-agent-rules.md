@@ -11,6 +11,16 @@ step number and short name from your brief.
   Research Sub-agents (subagent_type "dev-orchestrator:orch-researcher",
   no model parameter) with one question and a scope each. Inline Task
   Agents cannot spawn agents and use targeted reads instead.
+- If your brief has a `## Previous attempt` section, this step already ran
+  once. Before editing, run `git diff -- <your owned files>` to see what is
+  already there (earlier steps that own the same file show up too; their
+  handoffs are in your brief). Continue from that state: do not redo or
+  duplicate changes that already exist.
+- Read `.dev/tasks/_decisions.md` when you start and again right before
+  writing your result. The Lead may have decided something in another
+  step's terminal while you worked. If a decision contradicts what you did,
+  align your changes with it, or mark the step Blocked and escalate if you
+  cannot.
 - If your brief has a `## Fix` section, the step was already done once and
   a final check failed in your owned files. Fix only what that section
   shows, in your owned files, and do not redo the rest of the step.
@@ -28,6 +38,9 @@ step number and short name from your brief.
   options, blocking: true, then the same question in plain words), mark the
   step Blocked in your result file, and stop. If you are an inline Task
   Agent (no terminal), only write the payload to a Blocked result and stop.
+- If you are an inline Task Agent, your final reply is one line and nothing
+  else: `done: <path of your result file>`. Everything else goes in the
+  result file, not in the reply.
 - Everything you need is in your brief, this file, and the research file
   your brief names. Do not read .dev/orchestrator.md or other steps'
   briefs/results/research.

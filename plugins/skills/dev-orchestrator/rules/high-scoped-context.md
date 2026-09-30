@@ -31,12 +31,14 @@ is one question and a scope, and it returns ~10 lines.
 
 - A Task Agent brief carries only: its step, owned files, parallel peers, the
   task goal, decisions that affect this step, the output of the steps it
-  `Needs`, and the key findings of its own footprint research (with a
+  `Needs` (plus only the "Notes for next steps" of indirect dependencies), and the key findings of its own footprint research (with a
   pointer to `.dev/research/step-[N]-[short-name].md`). Never the full
   scratchpad, never the chat history. The fixed Task Agent rules are not
   pasted either: the brief points at `.dev/tasks/_rules.md`.
 - Task Agents do not read the scratchpad or other steps' briefs, results or
-  research. They start from their own research and do not re-investigate
+  research. The only shared file they read is `.dev/tasks/_decisions.md`,
+  so a decision the Lead makes in one terminal reaches steps already
+  running. They start from their own research and do not re-investigate
   what it already answers.
 - Research Sub-agents start from their brief alone (no fork of the parent's
   conversation) and return a short synthesis; result files keep one line per
