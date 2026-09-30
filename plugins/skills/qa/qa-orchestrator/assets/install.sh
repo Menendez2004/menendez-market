@@ -186,6 +186,11 @@ else
   ok "Created .gitignore"
 fi
 
+if ! grep -q "^\.dev/\?$" "$GITIGNORE" 2>/dev/null; then
+  echo -e "\n# QA run state (full agent outputs)\n.dev/" >> "$GITIGNORE"
+  ok "Added .dev/ to .gitignore"
+fi
+
 # ── Done ──────────────────────────────────────────────────────
 
 echo ""
@@ -197,6 +202,8 @@ echo "Next steps:"
 echo "  1. Fill in .env.qa with your app URLs and test credentials"
 echo "  2. Fill in .qa/config.yml with issue tracker details"
 echo "  3. Write your test plan in .qa/test-plan.md"
-echo "  4. Install QA skills: npx skills add dbx-labs/ai-toolkit -s qa-orchestrator qa-happy-path qa-api-adversary qa-debugger"
-echo "  5. Run /qa-run in Claude Code"
+echo "  4. Install QA skills in Claude Code:"
+echo "       /plugin marketplace add Menendez2004/menendez-market"
+echo "       /plugin install qa-orchestrator@menendez-market  (and qa-happy-path, qa-api-adversary, qa-debugger)"
+echo "  5. Run /qa-orchestrator in Claude Code"
 echo ""

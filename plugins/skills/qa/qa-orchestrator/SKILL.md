@@ -54,6 +54,8 @@ Non-interactive mode changes two things:
 | Agent spawn hierarchy | `rules/orch-spawn.md` | CRITICAL |
 | Bug triage decisions | `rules/orch-triage.md` | HIGH |
 | Report format | `rules/orch-report.md` | HIGH |
+| Scoped agent context | `rules/orch-scoped-context.md` | HIGH |
+| No secrets in output | `rules/orch-no-secrets-in-output.md` | CRITICAL |
 
 ## Configuration Files
 
@@ -62,7 +64,8 @@ Non-interactive mode changes two things:
 | `.qa/config.yml` | Agent config, issue tracker, personalities | Yes |
 | `.qa/test-plan.md` | Test scenarios and acceptance criteria | Yes |
 | `.env.qa` | App URLs, credentials, secrets | No (gitignored) |
-| `.qa/reports/*.md` | QA run reports | Yes |
+| `.qa/reports/*.md` | QA run reports (credentials redacted) | Yes |
+| `.dev/qa/<run-id>/*.md` | Full per-agent output of one run | No (gitignored) |
 
 Templates for these files are in `references/`.
 
@@ -78,11 +81,11 @@ Follow these phases IN SEQUENCE:
    Your test plan at .qa/test-plan.md is empty. Define your test flows before running QA.
    See references/test-plan.md for the template, or describe what to test and I'll help fill it in.
    ```
-3. Read `.env.qa` for app URLs and credentials. Warn if `QA_PORTAL_URL` or `QA_API_URL` are missing.
+3. Check which `.env.qa` keys are set, without printing or storing their values. Warn if `QA_PORTAL_URL` or `QA_API_URL` are missing.
 4. Determine scope — if a PR number/URL was provided:
    - Fetch PR via `mcp__github__get_pull_request`: extract **author login**, **branch name**, **title**, **body**
    - Parse branch name and title for a ticket ID pattern (e.g. `MINT-1221`, `LINEAR-42`, `PROJ-99`)
-   - If ticket ID found AND Linear MCP available: fetch the full ticket with `mcp__linear__get_issue` and include its description as additional scope context for the agents
+   - If ticket ID found AND Linear MCP available: fetch the ticket with `mcp__linear__get_issue` and condense its description into a short scope summary for the agents
    - Store the PR author login — used in Phase 5 to assign bug issues
    - If no PR provided: ask what to test (interactive) or use full test plan (non-interactive)
 
@@ -113,11 +116,13 @@ Proceed with all agents? (yes / remove N / add N)
 
 ### Phase 3: Spawn QA Agents
 
-Provide each agent with:
-- Relevant section of `.qa/test-plan.md`
-- The `.env.qa` values they need
-- QA scope context (PR diff, ticket description if fetched)
-- Instructions to produce structured output and file bugs per their rules
+Pick a run id (`YYYY-MM-DD-HHmmss`) and make sure `.dev/` is in `.gitignore`
+(add it, or ask the user). Spawn each agent fresh, never as a fork of this
+conversation, with a brief that holds only (see `rules/orch-scoped-context.md`):
+- Its own section of `.qa/test-plan.md` (qa-happy-path: `## UI Flows`; qa-api-adversary: `## API Endpoints`; custom: the section its personality covers)
+- The names of the `.env.qa` keys it needs; it reads the values itself
+- The part of the PR diff that touches its surface, plus the short ticket scope summary
+- Instructions to write its full output to `.dev/qa/<run-id>/<agent>.md`, record any answer the user gives in its terminal under `## User decisions` there, redact credentials (`rules/orch-no-secrets-in-output.md`), and return only a short summary: PASS/FAIL counts, one line per scenario, one line per bug (severity, title, issue URL), and `STOPPED_EARLY` if set
 
 **Parallelism strategy** — use the best available option (see `rules/orch-spawn.md`):
 1. **Forge MCP** — if `mcp__forge__spawn_claude` available: spawn each in a separate terminal
@@ -128,9 +133,9 @@ Do NOT spawn qa-debugger in this phase.
 
 ### Phase 4: Collect Results
 
-1. Collect all agent outputs
+1. Collect each agent's short summary (full output stays in its run file)
 2. Parse PASS/FAIL counts per agent
-3. Collect all bug reports (inline details + issue tracker ticket URLs)
+3. Collect the bug list (one line per bug + issue tracker ticket URLs); read a bug's details from the run file only when triage or issue filing needs them
 4. Partition bugs into two buckets:
    - **Blocking** — BLOCKER severity that caused an agent to stop early (agent signals `STOPPED_EARLY`)
    - **Non-blocking** — HIGH/MEDIUM/LOW bugs found while testing continued
@@ -166,7 +171,7 @@ BLOCKING BUG — stopped [agent-name] early
     Triaged after the blocker is resolved.
 ```
 
-If option 1: spawn `qa-debugger` with BLOCKER reports only, re-run failing scenarios, then continue to non-blocking triage.
+If option 1: spawn `qa-debugger` fresh with only the BLOCKER reports (reproductions from the run files), re-run the failing scenarios with fresh agents that get only those scenarios, then continue to non-blocking triage.
 If option 2: write report and stop.
 
 **If no blocking bugs**, present standard triage and WAIT:
@@ -180,8 +185,8 @@ Options:
 If option 1:
 1. Collect HIGH and BLOCKER bug reports
 2. Create isolated branch if git worktree available
-3. Spawn `qa-debugger` with all bug reports, sorted by severity
-4. After fixes: re-run ONLY failing scenarios to verify
+3. Spawn `qa-debugger` fresh with only those bug reports, sorted by severity, each with its reproduction from the run file
+4. After fixes: re-run ONLY failing scenarios to verify, with fresh agents that get only those scenarios (never the previous outputs)
 5. If still broken: ask user for another iteration or proceed to report
 
 #### Non-interactive mode (CI)
@@ -190,7 +195,7 @@ Never spawn qa-debugger. Never prompt. For every HIGH or BLOCKER bug:
 
 1. File a GitHub issue via `mcp__github__create_issue`:
    - **Title**: `[QA] <severity>: <short description>`
-   - **Body**: full reproduction details (input, response, steps, expected vs actual)
+   - **Body**: full reproduction details (input, response, steps, expected vs actual), with credentials redacted
    - **Labels**: `["bug", "qa"]` + `"security"` for auth/injection bugs
    - **Assignees**: PR author login fetched in Phase 1
 2. Add the issue URL to the report bugs table
@@ -203,7 +208,7 @@ For BLOCKER bugs that stopped an agent early, add a note to the report:
 
 ### Phase 6: Generate Report
 
-Write to `.qa/reports/YYYY-MM-DD-HHmmss-qa-report.md` (see `rules/orch-report.md` for format).
+Write to `.qa/reports/<run-id>-qa-report.md` (see `rules/orch-report.md` for format). Build it from the agent summaries, the bug details you read, and the `## User decisions` of each run file. Before writing, redact every `.env.qa` value (`rules/orch-no-secrets-in-output.md`).
 
 Present:
 ```
@@ -222,7 +227,7 @@ Verdict: PASS / FAIL
 
 1. Read the most recent (or specified) QA report
 2. Extract all FAIL results
-3. Spawn only the agents that had failures, with only the failing scenarios
+3. Spawn only the agents that had failures, fresh, with only the failing scenarios (not the previous report or outputs)
 4. Collect results and update the report
 
 ## Issue Tracker Detection
