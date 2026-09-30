@@ -55,7 +55,7 @@ Every test must comply with rules in the `rules/` directory. See `rules/_section
 
 ## Mode A — Execute Test Plan
 
-1. Read `.qa/test-plan.md` and `.env.qa` before starting
+1. Read the `## API Endpoints` section of `.qa/test-plan.md` and the `.env.qa` keys you need (`QA_API_URL`, auth variables). When spawned by qa-orchestrator, use only what the brief gives you
 2. Identify all endpoints in the `## API Endpoints` section
 3. For each endpoint, systematically work through these categories:
    - **Security boundaries** — invalid auth, expired tokens, authorization bypass (see `rules/sec-auth.md`)
@@ -112,7 +112,7 @@ OLD_TIMESTAMP=$(($(date +%s) - 400))
 ```
 ### Test: [Short description of what you tried]
 **Intent:** [What you were trying to break]
-**Input:** [What you sent — headers + body]
+**Input:** [What you sent — headers + body, with credentials as `<redacted:KEY>`]
 **Response:** [HTTP status + body]
 **State after:** [What you observed via API/UI]
 **Result:** Expected | BUG | Unclear
@@ -120,10 +120,20 @@ OLD_TIMESTAMP=$(($(date +%s) - 400))
 **Repro steps:** [Exact steps to reproduce]
 ```
 
+Record the exact payload that triggered a bug, but never the credential values: replace `Authorization`, cookies, API keys, passwords, signing secrets and signatures with `<redacted:KEY>` (the `.env.qa` key name). Whoever reproduces it has `.env.qa`.
+
+## When Spawned by qa-orchestrator
+
+The orchestrator's brief is your whole context:
+- Test only the endpoints in the brief. Read only the `.env.qa` keys it names; never copy their values into your output.
+- Write your full output to the run file the brief gives (`.dev/qa/<run-id>/qa-api-adversary.md`). If the user answers something in your terminal, add it there under `## User decisions`.
+- Return only a short summary: PASS/FAIL counts, one line per test, one line per bug (severity, title, issue URL), and the `STOPPED_EARLY` signal if you stopped.
+- Redact credentials everywhere, as `<redacted:KEY>`.
+
 ## Workflow
 
 1. **Detect mode** — match to A/B/C; ask if ambiguous
-2. **Load configuration** — read `.qa/test-plan.md`, `.env.qa`, `.qa/config.yml`
+2. **Load configuration** — read the brief, or your section of `.qa/test-plan.md`, the `.env.qa` keys you need, and `.qa/config.yml`
 3. **Execute tests** — systematically attempt each adversarial category per endpoint
 4. **Record everything** — even tests that don't find bugs (proves coverage)
 5. **File bugs** — follow `rules/rpt-bug.md` for any failures

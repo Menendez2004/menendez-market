@@ -41,7 +41,7 @@ When a bug is found, always report it inline in the test output AND file it in t
 Filed: LIN-456 [QA-HappyPath] Order creation returns 500 on valid input
 ```
 
-- Full reproduction details, severity, expected vs actual, and issue tracker ticket filed.
+- Full reproduction details, severity, expected vs actual, and issue tracker ticket filed. Credentials typed in a step are written as `<redacted:KEY>`, never in clear.
 - Another engineer can reproduce the bug from this report alone.
 
 ## Provider-Specific Filing

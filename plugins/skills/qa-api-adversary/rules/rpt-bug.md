@@ -41,7 +41,7 @@ When a bug is found, always report it inline in the test output AND file it in t
 Filed: LIN-789 [QA-ApiAdversary] POST /api/users returns 500 on SQL injection input
 ```
 
-- Full reproduction details with exact input, response, and severity.
+- Full reproduction details with exact input, response, and severity. Credentials in headers or body are written as `<redacted:KEY>`, never in clear.
 - Filed in issue tracker with the `[QA-ApiAdversary]` prefix for traceability.
 
 ## Provider-Specific Filing
@@ -55,7 +55,7 @@ Filed: LIN-789 [QA-ApiAdversary] POST /api/users returns 500 on SQL injection in
 - Title: `[QA-ApiAdversary] <description>`
 - Labels: `["bug", "qa"]` (add `"security"` for auth bugs)
 
-**Jira** (`issue_tracker.detected: github`):
+**Jira** (`issue_tracker.detected: jira`):
 - Title: `[QA-ApiAdversary] <description>`
 - Labels: `["bug", "qa"]` (add `"security"` for auth bugs)
 
