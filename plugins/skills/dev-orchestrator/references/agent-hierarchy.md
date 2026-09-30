@@ -119,6 +119,10 @@ Terminal / session name: orch-s<N>-<short-name>
 - Decisions that affect this step: <only the relevant Decisions Log entries, or "none">
 - Output of the steps you need: <for each step in this step's Needs: files
   touched + "Notes for next steps" from its result file, or "none">
+- Output of indirect dependencies: <for each step reached only through
+  Needs of Needs: its "Notes for next steps" only, or "none">
+- Shared decisions: `.dev/tasks/_decisions.md` (read it now and again
+  before writing your result)
 
 ## Research already done (start here)
 
@@ -126,6 +130,19 @@ Terminal / session name: orch-s<N>-<short-name>
 files and symbols to change (path:line), dependents, risks; graphify used
 yes/no. Then: "Full synthesis: .dev/research/step-<N>-<short-name>.md", or
 "none".>
+
+- Research taken after: <steps that were Complete when it was taken, or
+  "no step had run">
+- Completed since then: <step: files touched, for each step completed after
+  the research, or "none">. Line numbers and symbols in those files may have
+  moved: re-read them before relying on this research.
+
+## Previous attempt (relaunches only)
+
+<Only when this step ran before (needs-file, Fix, relaunch after an inline
+escalation, resume after a crash): the previous result file's Status, Files
+touched and Notes, the escalation answer if any, and the output of
+`git diff --stat -- <owned files>`. Omit the section on a first launch.>
 
 ## Rules
 
@@ -154,7 +171,8 @@ Agents actually read.)
 ## Research Sub-agent brief template
 
 With `orch-researcher` the rules below are already in the agent's
-definition, so the brief only needs the `Question` and `Scope` lines. With
+definition, so the brief only needs the `Question` and `Scope` lines (plus
+`Files changed since the graph was built` once any step has completed). With
 the `Explore` fallback, send the whole text.
 
 ```text
@@ -164,6 +182,7 @@ git to change anything, do not run tests, and do not spawn any agent.
 
 Question: <one focused question>
 Scope: <paths / services / logs to look at>
+Files changed since the graph was built: <Files touched of completed steps, or "none">
 
 1. Check whether graphify is available (see references/graphify.md). If it
    is, use it FIRST to map dependencies and relations relevant to the
