@@ -4,8 +4,9 @@ description: >-
   Human-in-the-loop orchestrator for development tasks with a controlled
   two-level agent hierarchy. Adopts the plan the Lead Developer provides
   (never regenerates it); only when no plan is given and the task is complex
-  does it propose one with the strongest model ("opus") or ask the Lead for
-  one. Then pauses to ask whether to run as a single session or multi-agent.
+  does it draft one in plan mode under opusplan or ask the Lead for one.
+  Models per role: opusplan for planning, the latest Sonnet for execution,
+  Sonnet 4.6 for research. Then pauses to ask whether to run as a single session or multi-agent.
   In multi-agent mode it launches one independent Task Agent (a full CLI
   session in its own terminal, named orch-sN-name, opened in
   the terminal the user is actually using) per plan step; each Task Agent may
@@ -24,7 +25,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 4
+  version: 5
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -51,12 +52,18 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
 | Level | Who | Can do | Can NOT do |
 | --- | --- | --- | --- |
 | -- | **Lead Developer** (human) | Reviews the plan, makes architectural calls, has the final word. | -- |
-| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or propose one with `opus` when none is given), own `.dev/orchestrator.md`, launch Task Agents. | Make architectural or destructive decisions; commit/push/merge/PR. |
+| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or draft one in plan mode under `opusplan` when none is given), own `.dev/orchestrator.md`, launch Task Agents. | Make architectural or destructive decisions; commit/push/merge/PR. |
 | 1 | **Task Agent** | Execute exactly one plan step; modify code for that step; spawn Research Sub-agents via the inline `Agent` tool. | Launch other Task Agents or terminals; work on other steps; commit/push/merge/PR. |
 | 2 | **Research Sub-agent** | Read files, run searches, read logs/docs, run `graphify`; return a short synthesis. | Write/edit anything; spawn any agent; talk to the Lead. |
 
 The hierarchy is capped at **2 levels below you**. Nothing below Level 2
-exists. Full roles, permissions and briefing templates:
+exists.
+
+Each role has a fixed model: **planning** with `opusplan` (the Orchestrator
+session; Opus in plan mode), **execution** with the latest Sonnet (Task
+Agents, `claude --model sonnet`), and **research** with Sonnet 4.6 (Research
+Sub-agents, pinned through `CLAUDE_CODE_SUBAGENT_MODEL`). How to set each:
+`references/models.md`. Full roles, permissions and briefing templates:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
@@ -94,11 +101,12 @@ Criteria: `references/execution-modes.md`.
 
 ### 3. Propose or request a plan (complex tasks without a plan only)
 
-Either propose a plan generated with `model: "opus"` (a single planning-only
-`Agent` call that writes no code) or ask the Lead to supply one via
-`escalate_to_lead`. A proposed plan is a **draft**: the Lead must approve it
-before it counts as the plan. Record it with `Source: Orchestrator-proposed
-(opus), approved by Lead on <date>`.
+Either draft a plan yourself **in plan mode** with the session on
+`opusplan`, so Opus writes it and no code is touched, or ask the Lead to
+supply one via `escalate_to_lead`. A proposed plan is a **draft**: the Lead
+must approve it before it counts as the plan. Record it with `Source:
+Orchestrator-proposed (opusplan), approved by Lead on <date>`. See
+`references/models.md`.
 
 ### 4. Map dependencies and parallel waves
 
@@ -222,6 +230,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 ## References
 
 - `references/agent-hierarchy.md` -- levels, roles, permissions, briefing templates.
+- `references/models.md` -- model per role (opusplan, latest Sonnet, Sonnet 4.6).
 - `references/terminal-launch.md` -- terminal detection, naming, launch commands.
 - `references/graphify.md` -- conditional graphify use by Research Sub-agents.
 - `references/execution-modes.md` -- plan intake, triage, planning, mode routing.

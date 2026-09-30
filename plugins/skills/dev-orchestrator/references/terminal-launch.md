@@ -56,8 +56,15 @@ Shared variables (run from the project root):
 ```bash
 NAME="orch-s2-ratelimit"
 BRIEF=".dev/tasks/step-2-ratelimit.md"
-CMD="claude 'Read $BRIEF and execute it exactly as written.'"
+CMD="CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6 CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 claude --model sonnet 'Read $BRIEF and execute it exactly as written.'"
 ```
+
+`--model sonnet` runs the Task Agent on the latest Sonnet, and the two
+variables pin its Research Sub-agents to Sonnet 4.6
+(`references/models.md`). The inline `VAR=value` form works in POSIX
+shells (every `sh -c` below). In PowerShell (Windows Terminal) set them
+first instead: `$env:CLAUDE_CODE_SUBAGENT_MODEL='claude-sonnet-4-6';
+$env:CLAUDE_CODE_SUBAGENT_MODEL_FORCE='1'; claude --model sonnet '...'`.
 
 | Terminal | Command |
 | --- | --- |

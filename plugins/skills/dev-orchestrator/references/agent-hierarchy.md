@@ -30,7 +30,8 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 - Receives the task, adopts and validates the Lead's plan
   (`rules/high-adopt-lead-plan.md`), or -- only if there is no plan and the
-  task is complex -- proposes one with `model: "opus"` or requests one.
+  task is complex -- drafts one in plan mode under `opusplan`
+  (`references/models.md`) or requests one.
 - Asks the mandatory single-session vs. multi-agent question.
 - Sole writer of `.dev/orchestrator.md`.
 - Launches one Task Agent per plan step in the user's terminal
@@ -42,7 +43,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 ### Task Agent (Level 1)
 
 - An independent, full CLI session running in its own terminal named
-  `orch-s[N]-[short-name]`.
+  `orch-s[N]-[short-name]`, on the latest Sonnet (`claude --model sonnet`).
 - Executes exactly **one** plan step: the one in its brief.
 - May modify code needed for that step (non-destructive changes only;
   destructive ones go through `escalate_to_lead`).
@@ -58,6 +59,9 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 - Ephemeral, spawned inline by a Task Agent (or by the Orchestrator in
   single-session mode).
+- Runs on Sonnet 4.6, pinned by `CLAUDE_CODE_SUBAGENT_MODEL` in the spawning
+  session (`references/models.md`). Never pass a `model` parameter on the
+  `Agent` call.
 - **Strictly read-only**: reads files, runs searches, reads logs and docs,
   runs read-only analysis tools. No `Edit`/`Write`, no state-changing shell
   commands, no git mutations.
