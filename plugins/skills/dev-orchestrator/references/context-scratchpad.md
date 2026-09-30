@@ -14,6 +14,9 @@ conversation memory.
   directory if it does not exist. This file is plain markdown so the Lead can
   open and read it directly at any time without tooling.
 - Task Agent briefs and results live in `.dev/tasks/` (create it if needed).
+- Footprint research syntheses live in `.dev/research/`, one file per step,
+  written by the Orchestrator from its Research Sub-agents' replies. A Task
+  Agent reads only the file its brief names.
 - `.dev/` holds the Lead's task, decisions and agent notes, so it must not end
   up in commits. If `.dev/` is not in `.gitignore`, ask the Lead to add it (or
   confirm they want it tracked) before the first write.
@@ -33,6 +36,9 @@ conversation memory.
       step-1-<short-name>.result.md   # result (Task Agent writes)
       step-2-<short-name>.md
       ...
+    research/
+      step-1-<short-name>.md          # footprint research (Orchestrator writes)
+      ...
 ```
 
 ## Format
@@ -46,21 +52,23 @@ conversation memory.
 
 ## Plan
 
-Source: <Lead-provided | Orchestrator-proposed (opus), approved by Lead on <date> | Orchestrator, simple task>
+Source: <Lead-provided | Orchestrator-proposed (opusplan), approved by Lead on <date> | Orchestrator, simple task>
 
 <The plan as a numbered list. If Lead-provided, copied verbatim -- never
 reworded.>
 
 ## Dependency Map
 
-<Per step: writes, reads, needs, hotspots. Then the waves and the
-co-dependencies, as shown to the Lead (references/parallelization.md).>
+<Per step: writes, reads, needs, hotspots, runner (terminal | inline).
+Then the start preview, the co-dependencies and the concurrency cap, as
+shown to the Lead (references/parallelization.md).>
 
 ## Environment
 
-- Execution mode: <single session | multi-agent (sequential) | multi-agent (waves)>
+- Execution mode: <single session | multi-agent (sequential) | multi-agent (cap N)>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
 - graphify: <available (existing graph / skill / CLI) | not available>
+- Models: <planning / execution / research models actually used>
 
 ## Decisions Log
 
@@ -69,17 +77,18 @@ co-dependencies, as shown to the Lead (references/parallelization.md).>
 
 ## Current Step
 
-<Current wave and its steps in progress, or "Complete" / "Blocked,
-awaiting Lead".>
+<Steps running, steps held (and which Blocked/Failed step they wait on),
+or "Complete" / "Blocked, awaiting Lead".>
 
 ## Task Agent Handoffs
 
 <One subsection per step, in the form:>
 
 ### Step <N>: <short step title>
-- Terminal: orch-s<N>-<short-name>
+- Runner: <terminal orch-s<N>-<short-name> | inline>
 - Brief: .dev/tasks/step-<N>-<short-name>.md
-- Wave: <W>, owned files: <paths>
+- Research: .dev/research/step-<N>-<short-name>.md
+- Owned files: <paths>
 - Status: <Running | Complete | Blocked | Failed>
 - Result: <files touched, research used (graphify yes/no), notes>
 
@@ -94,7 +103,7 @@ awaiting Lead".>
 - **Before** launching a Task Agent or starting a step yourself: read the
   whole file yourself, but put in the step's brief only the scoped context
   the brief template asks for (task goal, relevant decisions, output of the
-  steps it needs). Never paste the whole scratchpad or the chat history into
+  steps it needs, key findings of that step's research). Never paste the whole scratchpad or the chat history into
   a brief: other steps' handoffs, unrelated decisions and research notes are
   noise for that agent and grow with every step.
 - When merging a result file, keep the handoff short: status, files touched,

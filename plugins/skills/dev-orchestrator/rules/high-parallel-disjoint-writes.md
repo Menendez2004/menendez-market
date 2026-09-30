@@ -21,26 +21,29 @@ Parallelism saved minutes and cost a rework of three steps.
 The Orchestrator builds a footprint per step (writes, reads, needs, shared
 hotspots) with a read-only Research Sub-agent, then groups them:
 
-Wave 1 (parallel): step 1 (writes src/auth/*, package.json),
-                   step 4 (writes docs/*)
-Wave 2 (parallel): step 2 (writes src/billing/*, package.json -> waits for 1),
-                   step 3 (needs step 1's function)
+Start now (parallel): step 1 (writes src/auth/*, package.json),
+                      step 4 (writes docs/*)
+After 1:              step 2 (writes src/billing/*, package.json),
+                      step 3 (needs step 1's function)
 
 It shows this map to the Lead before the mandatory question, then launches
-wave 1 in two terminals and wave 2 only after both results are Complete.
+steps 1 and 4, and launches 2 and 3 the moment step 1 is Complete, without
+waiting for step 4.
 ```
 
 **Rules:**
 
 - Before the mandatory pause, map every step's writes, reads, needs and
   shared hotspots (`references/parallelization.md`).
-- Two steps share a wave only if neither needs the other, their writes do
-  not overlap, and they do not touch the same single-writer hotspot
-  (lockfiles, manifests, migrations, generated/index files, global config).
+- Two steps run at the same time only if neither needs the other, their
+  writes do not overlap, and they do not touch the same single-writer
+  hotspot (lockfiles, manifests, migrations, generated/index files, global
+  config). A step starts as soon as its `Needs` are Complete and it
+  conflicts with nothing running; there is no wave barrier.
 - Unknown footprint means sequential. When in doubt, sequential.
-- Every Task Agent in a parallel wave edits only its owned files; anything
+- Every Task Agent edits only its owned files; anything
   else is `Blocked` with `needs-file`, never a silent edit.
-- Scheduling never changes the plan's content; the Lead approves the waves.
+- Scheduling never changes the plan's content; the Lead approves the map.
 
 **Why it matters:** Parallel Task Agents share one working tree. Without a
 dependency map, the fastest schedule is also the one most likely to produce
