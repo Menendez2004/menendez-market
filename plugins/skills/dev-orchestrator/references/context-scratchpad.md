@@ -32,6 +32,7 @@ conversation memory.
   .dev/
     orchestrator.md
     tasks/
+      _rules.md                       # Task Agent rules, copied once per task
       step-1-<short-name>.md          # brief (Orchestrator writes)
       step-1-<short-name>.result.md   # result (Task Agent writes)
       step-2-<short-name>.md
@@ -45,6 +46,18 @@ conversation memory.
 
 ```markdown
 # Orchestrator Scratchpad
+
+## State
+
+<Rewritten in place after every result; at most ~15 lines. The only section
+read before every launch.>
+- Mode: <single session | multi-agent, cap N>
+- Complete: <step numbers>
+- Running: <step: runner>
+- Ready next: <step numbers, or none>
+- Held: <step -> waiting on Blocked/Failed step M, or none>
+- Waiting on the Lead: <open escalations, one line each, or none>
+- Last updated: <YYYY-MM-DD HH:MM>
 
 ## Task
 
@@ -75,11 +88,6 @@ shown to the Lead (references/parallelization.md).>
 <Append-only. One entry per Lead decision:>
 - <YYYY-MM-DD HH:MM> -- <what was asked> -> <what the Lead decided>
 
-## Current Step
-
-<Steps running, steps held (and which Blocked/Failed step they wait on),
-or "Complete" / "Blocked, awaiting Lead".>
-
 ## Task Agent Handoffs
 
 <One subsection per step, in the form:>
@@ -100,17 +108,45 @@ or "Complete" / "Blocked, awaiting Lead".>
 
 ## Update discipline
 
-- **Before** launching a Task Agent or starting a step yourself: read the
-  whole file yourself, but put in the step's brief only the scoped context
-  the brief template asks for (task goal, relevant decisions, output of the
-  steps it needs, key findings of that step's research). Never paste the whole scratchpad or the chat history into
-  a brief: other steps' handoffs, unrelated decisions and research notes are
-  noise for that agent and grow with every step.
+- **Before** launching a Task Agent or starting a step yourself, read only:
+  `## State`, that step's entry in `## Dependency Map`, the handoffs of the
+  steps in its `Needs`, and the `Decisions Log` entries that affect it. Do
+  not re-read the whole file: the append-only sections grow with every
+  step. Put in the step's brief only the scoped context the brief template
+  asks for (task goal, relevant decisions, output of the steps it needs,
+  key findings of that step's research). Never paste the whole scratchpad
+  or the chat history into a brief.
 - When merging a result file, keep the handoff short: status, files touched,
   one line per research conclusion, and the notes for next steps. Merge any
   `Lead decisions` into the `Decisions Log`.
-- **After** a step completes: merge the result file, append to `Decisions
-  Log` if a Lead decision was involved, and update `Current Step`.
+- **After** every result: merge it, append to `Decisions Log` if a Lead
+  decision was involved, touch the result's `.merged` marker, and rewrite
+  `## State`.
 - Never delete history from `Decisions Log` or `Task Agent Handoffs` -- both
   are append-only, so the Lead can always reconstruct how the project got to
   its current state.
+
+## Resuming after an interruption
+
+If a session starts and `.dev/orchestrator.md` already exists for the same
+task (the Orchestrator crashed, the context was reset, or the Lead closed
+the session), resume instead of starting over. This is the one time the
+Orchestrator reads the whole scratchpad.
+
+1. Read the whole scratchpad, then list `.dev/tasks/`.
+2. Classify each step:
+   - `.result.md` with a newer or equal `.merged` marker -> already merged;
+     never relaunch a `Complete` step.
+   - `.result.md` without a marker, or newer than it -> merge it now.
+   - Brief but no result, runner `terminal` -> check whether its terminal
+     is still alive (for tmux: `tmux list-windows -a | grep orch-s<N>-`).
+     Alive -> keep waiting for it. Gone, or unknown -> ask the Lead.
+   - Brief but no result, runner `inline` -> the agent died with the old
+     session.
+   - No brief -> not started; the launch rule decides.
+3. A step that died mid-way may have left partial edits in its owned files.
+   Show the Lead `git diff --stat` for those files and ask whether to
+   relaunch it on top of them or have the Lead discard them first. Never
+   discard them yourself (`rules/critical-no-autonomous-git.md`).
+4. Rewrite `## State`, log the resume in the `Decisions Log`, and continue
+   with the launch rule (`references/parallelization.md` section 3).

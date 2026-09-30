@@ -26,9 +26,11 @@ file. After step 4 completes, the Orchestrator runs the checks once:
   npm run typecheck  -> 1 error in src/limits.ts:18
   npm run build      -> ok
 
-It records the results in .dev/orchestrator.md under "Final Checks" and
-reports the typecheck error, with its output, to the Lead, asking how to
-proceed.
+It records the results in .dev/orchestrator.md under "Final Checks",
+sees that src/limits.ts is owned by step 2, and tells the Lead: "typecheck
+fails in src/limits.ts:18 (step 2, ratelimit). Relaunch step 2 with this
+error as a fix?" The Lead says yes; step 2's Task Agent fixes only that
+error, and the Orchestrator reruns the checks once and reports again.
 ```
 
 **What counts as a check:** fast, static verification using the project's
@@ -48,8 +50,10 @@ test run, that is the Lead's decision for that task only.
   plan step asks for it is allowed.
 - Checks run once, by the Orchestrator, after every plan step is complete.
   Task Agents and Research Sub-agents never run them.
-- Failing checks are reported to the Lead with their output. The Orchestrator
-  does not start a fix-and-recheck loop on its own.
+- Failing checks are reported to the Lead with their output and the step
+  that owns each failing file. The Orchestrator may offer to relaunch that
+  step with a `## Fix` section, but does it only with the Lead's yes, and
+  never starts a fix-and-recheck loop on its own.
 
 **Why it matters:** Tests are slow and belong to the Lead's or CI's
 verification, not to every agent step. Running checks per step verifies

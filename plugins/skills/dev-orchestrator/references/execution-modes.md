@@ -70,6 +70,9 @@ what one Task Agent receives.
 After intake/planning the Orchestrator always asks the mandatory question
 (`SKILL.md` step 5), after showing the dependency map
 (`references/parallelization.md`). Never infer the answer from the task's size.
+The only exception is a request that already names the mode explicitly
+("multi-agent, max 3"): then the Orchestrator shows the map, says it is
+using that mode because the Lead said so, and starts without asking.
 
 - **Single session** -> the Orchestrator executes each step in order itself,
   updating the scratchpad after each, then runs the final checks once. It
@@ -101,5 +104,19 @@ In either mode, after every plan step is complete, the Orchestrator runs the
 project's fast checks once: lint, format check, typecheck, build/compile and
 the project's own validators, discovered from the project's scripts or CI
 config. It never runs test suites, and no check runs between steps. Results
-go to the scratchpad's `## Final Checks` section; failures are reported to
-the Lead with their output. See `rules/high-checks-not-tests.md`.
+go to the scratchpad's `## Final Checks` section.
+
+When a check fails, the Orchestrator attributes it before reporting:
+
+1. Extract the file paths from the failing output.
+2. Match them against each step's owned files in the `## Dependency Map`.
+3. Report to the Lead, in one message: each failing check, the step that
+   owns each failing file (or "no owner" for files no step touched), and the
+   relevant output.
+4. Offer to relaunch only the owning step's Task Agent, with the same brief
+   plus a `## Fix` section holding that step's errors. It runs on the same
+   runner as before and fixes only those errors in its owned files.
+5. Only if the Lead agrees: relaunch, wait, merge, then rerun the checks
+   once and report again. Never start another round on your own.
+
+See `rules/high-checks-not-tests.md`.
