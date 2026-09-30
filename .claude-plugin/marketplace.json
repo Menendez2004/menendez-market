@@ -47,6 +47,80 @@
         "testing",
         "workflow"
       ]
+    },
+    {
+      "name": "qa-happy-path",
+      "source": "./",
+      "description": "Drive a web application's UI through core positive flows using Playwright browser automation. Verify that primary user journeys work end-to-end, take snapshots at each step, and report bugs with full reproduction details. Trigger on \"run happy path tests\", \"test the UI flows\", \"QA the happy path\", \"verify the user journey\", or when a test plan defines UI flows.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/qa-happy-path"
+      ],
+      "keywords": [
+        "qa",
+        "playwright",
+        "ui-testing",
+        "e2e"
+      ]
+    },
+    {
+      "name": "qa-api-adversary",
+      "source": "./",
+      "description": "Adversarial QA tester that systematically tries to break an application's API. Tests security boundaries, input validation, race conditions, deduplication, and malformed requests. Reports bugs with full reproduction details. Trigger on \"break the API\", \"chaos monkey\", \"adversarial testing\", \"security test the endpoints\", \"test edge cases\", or when a test plan defines API endpoints.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/qa-api-adversary"
+      ],
+      "keywords": [
+        "qa",
+        "api-testing",
+        "security",
+        "adversarial"
+      ]
+    },
+    {
+      "name": "qa-debugger",
+      "source": "./",
+      "description": "Receive bug reports from QA agents and implement focused, minimal fixes. Read before writing, understand the root cause, fix with the smallest possible change, and report what was changed. Works with any tech stack. Trigger on \"fix the QA bugs\", \"implement the bug fix\", \"patch the defect\", or when a QA agent has produced bug reports with reproduction steps.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/qa-debugger"
+      ],
+      "keywords": [
+        "qa",
+        "bugfix",
+        "debugging"
+      ]
+    },
+    {
+      "name": "qa-personality-builder",
+      "source": "./",
+      "description": "Create custom QA agent personalities for project-specific testing needs. Guided builder that asks about the specialty, tools, and test scenarios, then generates a personality file and registers it in the QA config. Trigger on \"create a QA personality\", \"add a custom test agent\", \"build a webhook tester\", or when the user needs a project-specific QA agent. Also triggered by /qa-create-personality.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/qa-personality-builder"
+      ],
+      "keywords": [
+        "qa",
+        "personality-builder",
+        "custom-agents"
+      ]
     }
   ]
 }
