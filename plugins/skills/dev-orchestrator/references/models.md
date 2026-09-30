@@ -7,15 +7,15 @@ spent only where decisions are made.
 | --- | --- | --- |
 | Planning (Orchestrator, Level 0) | `opusplan` | The Orchestrator session runs with `opusplan`: Opus while in plan mode, Sonnet outside it. |
 | Execution (Task Agents, Level 1, and the Orchestrator outside plan mode) | latest Sonnet (`sonnet` alias) | `claude --model sonnet` in each Task Agent's launch command. |
-| Research Sub-agents (Level 2) | Sonnet 4.6 (`claude-sonnet-4-6`) | `CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6` with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` in the session that spawns them. |
+| Inline Task Agents (small steps) | latest Sonnet (`sonnet` alias) | `model: "sonnet"` on the `Agent` call. |
+| Research Sub-agents (Level 2) | Sonnet 4.6 (`claude-sonnet-4-6`) | The plugin's `orch-researcher` agent, whose definition sets `model: claude-sonnet-4-6`. |
 
 ## Orchestrator: `opusplan`
 
 Start the Orchestrator session with:
 
 ```bash
-CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6 CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 \
-  claude --model opusplan
+claude --model opusplan
 ```
 
 or switch an open session with `/model opusplan`. If the session is not on
@@ -37,22 +37,20 @@ the skill.
 
 ## Research Sub-agents: Sonnet 4.6
 
-The inline `Agent` tool only accepts model aliases, and built-in read-only
-types such as `Explore` carry their own default model. To pin Research
-Sub-agents to Sonnet 4.6, the spawning session sets:
+The inline `Agent` tool only accepts model aliases, so a dated model such as
+Sonnet 4.6 is pinned in an agent definition instead. The plugin ships
+`agents/orch-researcher.md` with `model: claude-sonnet-4-6` and read-only
+tools (`Read`, `Grep`, `Glob`, `Bash`). Spawn Research Sub-agents with
+`subagent_type: "dev-orchestrator:orch-researcher"` and **no** `model`
+parameter, because a per-call `model` overrides the definition.
 
-```bash
-CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6
-CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1
-```
+If that agent type is not available (the skill was copied without the
+plugin), use `subagent_type: "Explore"` with `model: "sonnet"`, and note in
+the scratchpad's `## Environment` that research ran on the latest Sonnet
+instead of 4.6.
 
-`FORCE` makes it override both the subagent type's own model and any
-`model` parameter, so every inline agent in that session runs on Sonnet 4.6.
-This is safe because the only inline agents in this skill are Research
-Sub-agents. Do not pass a `model` parameter on the `Agent` call.
-
-Both the Task Agent launch command and the Orchestrator start command above
-set these variables, so this holds in multi-agent and single-session mode.
+Inline Task Agents pass `model: "sonnet"` explicitly, so they keep running
+on the latest Sonnet.
 
 ## Other harnesses
 

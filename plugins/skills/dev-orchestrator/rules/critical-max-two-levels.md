@@ -20,7 +20,7 @@ plan no longer maps to what is running, and nobody owns the result.
 
 ```
 Task Agent for step 2 spawns one read-only Research Sub-agent (Agent tool,
-Explore type): "Which modules call RateLimiter and how are they tested? Use
+orch-researcher type): "Which modules call RateLimiter and how are they tested? Use
 graphify first if available." It gets a 10-line synthesis back, then writes
 the code AND the tests itself. If the step is genuinely too big, it marks
 the step Blocked and escalates to the Lead to split the plan.
@@ -28,14 +28,20 @@ the step Blocked and escalates to the Lead to split the plan.
 
 **Limits:**
 
-- Level 0 -- Orchestrator: launches Task Agents (multi-agent) or Research
-  Sub-agents (single session). Nothing else spawns Task Agents.
+- Level 0 -- Orchestrator: launches Task Agents (in terminals, or inline for
+  small steps) and its own Research Sub-agents. Nothing else spawns Task
+  Agents.
 - Level 1 -- Task Agent: may spawn Research Sub-agents only. Never another
   Task Agent, never a new terminal, never a writing sub-agent.
 - Level 2 -- Research Sub-agent: spawns nothing.
 
-When briefing a Research Sub-agent, prefer a subagent type without the Agent
-tool (e.g. `Explore` in Claude Code) so the limit is enforced structurally.
+An inline Task Agent (small steps, `references/terminal-launch.md` section
+6) is still Level 1. It runs inside the Orchestrator's session but spawns
+nothing, since inline agents cannot nest.
+
+When briefing a Research Sub-agent, use a subagent type without the Agent
+tool (`dev-orchestrator:orch-researcher` in Claude Code, or `Explore` as a
+fallback) so the limit is enforced structurally.
 
 **Why it matters:** Each extra level hides work from the Lead and from the
 scratchpad, multiplies context and cost, and makes a failed step impossible

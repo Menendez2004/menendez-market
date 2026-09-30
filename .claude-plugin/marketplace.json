@@ -11,7 +11,7 @@
     {
       "name": "dev-orchestrator",
       "source": "./",
-      "description": "Human-in-the-loop orchestrator for development tasks with a controlled two-level agent hierarchy. Adopts the plan the Lead Developer provides (never regenerates it); only without a plan on a complex task does it draft one in plan mode under opusplan or ask the Lead. Uses opusplan for planning, the latest Sonnet for execution and Sonnet 4.6 for research. Asks whether to run as a single session or multi-agent; in multi-agent mode it launches one independent Task Agent per plan step in its own terminal (orch-sN-name, opened in the user's current terminal). Task Agents may spawn ephemeral read-only Research Sub-agents that use graphify first when available. Maps step dependencies and runs independent steps with disjoint file writes in parallel waves. Never runs tests: the orchestrator runs checks (lint, typecheck, build) once after the whole task. Never guesses on ambiguity, architecture, or destructive/git actions -- always escalates to the Lead via the escalate_to_lead protocol. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\", or any multi-step dev task where the user asks how to run it.",
+      "description": "Human-in-the-loop orchestrator for multi-step dev tasks with a two-level agent hierarchy. Adopts the Lead's plan (drafts one in plan mode under opusplan only if none is given), maps step dependencies and asks whether to run as a single session or multi-agent. In multi-agent mode each step gets a Task Agent on the latest Sonnet, in its own terminal (orch-sN-name) or inline for small steps, and starts as soon as its dependencies finish. Task Agents reuse the orchestrator's research and may spawn read-only Research Sub-agents (Sonnet 4.6) that use graphify first. Never runs tests: checks run once at the end. Never guesses on ambiguity, architecture, or destructive/git actions: escalates to the Lead. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\".",
       "version": "1.0.0",
       "author": {
         "name": "Menendez2004"
@@ -19,6 +19,9 @@
       "strict": false,
       "skills": [
         "./plugins/skills/dev-orchestrator"
+      ],
+      "agents": [
+        "./plugins/skills/dev-orchestrator/agents/orch-researcher.md"
       ],
       "keywords": [
         "orchestration",

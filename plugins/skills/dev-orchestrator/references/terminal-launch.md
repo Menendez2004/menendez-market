@@ -56,15 +56,12 @@ Shared variables (run from the project root):
 ```bash
 NAME="orch-s2-ratelimit"
 BRIEF=".dev/tasks/step-2-ratelimit.md"
-CMD="CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-6 CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 claude --model sonnet 'Read $BRIEF and execute it exactly as written.'"
+CMD="claude --model sonnet 'Read $BRIEF and execute it exactly as written.'"
 ```
 
-`--model sonnet` runs the Task Agent on the latest Sonnet, and the two
-variables pin its Research Sub-agents to Sonnet 4.6
-(`references/models.md`). The inline `VAR=value` form works in POSIX
-shells (every `sh -c` below). In PowerShell (Windows Terminal) set them
-first instead: `$env:CLAUDE_CODE_SUBAGENT_MODEL='claude-sonnet-4-6';
-$env:CLAUDE_CODE_SUBAGENT_MODEL_FORCE='1'; claude --model sonnet '...'`.
+`--model sonnet` runs the Task Agent on the latest Sonnet. Its Research
+Sub-agents get Sonnet 4.6 from their own agent definition
+(`references/models.md`), so nothing else goes on the command line.
 
 | Terminal | Command |
 | --- | --- |
@@ -126,11 +123,64 @@ a shell. In that case:
 Never fall back to running the step inline in the Orchestrator's own session
 without the Lead agreeing to switch to single-session mode.
 
-## 5. Waiting for completion
+## 5. Waiting for results
 
-The Orchestrator waits for the `.dev/tasks/step-[N]-[short-name].result.md`
-file of every step in the current wave (poll with a reasonable interval, or
-use the harness's background monitor). Then it merges the results into the
-scratchpad and launches the next wave (`references/parallelization.md`). If a
-result says `Blocked` with `needs-file`, it reschedules that step; any other
-`Blocked` result is surfaced to the Lead and execution halts.
+### Result files are written atomically
+
+A Task Agent writes its result to
+`.dev/tasks/step-[N]-[short-name].result.md.tmp` and then renames it to
+`.result.md` (`mv` is atomic on the same filesystem). The Orchestrator
+therefore never reads a half-written result: if `.result.md` exists, it is
+complete. The same applies when a Task Agent replaces its result after the
+Lead answers an escalation.
+
+### Wait in the background, not in the conversation
+
+Do not check the files turn after turn. Start one background command that
+exits as soon as **any** running step produces a new result, and let the
+harness wake you when it exits (in Claude Code: `Bash` with
+`run_in_background: true`, or the `Monitor` tool):
+
+```bash
+# One path per running or held step; exits with the first result not merged yet.
+while :; do
+  for f in .dev/tasks/step-2-routes.result.md .dev/tasks/step-4-docs.result.md; do
+    [ -f "$f" ] && { [ ! -f "$f.merged" ] || [ "$f" -nt "$f.merged" ]; } \
+      && { echo "$f"; exit 0; }
+  done
+  sleep 5
+done
+```
+
+After merging a result, `touch <result>.merged`. A result counts as new
+while it has no `.merged` marker or is newer than it, so nothing that lands
+between two waits is missed, and a result replaced after an escalation is
+picked up again.
+
+When it exits: merge that result into the scratchpad, touch its marker, apply the launch rule
+(`references/parallelization.md` section 3), and start a new wait over the
+steps still running. Blocked and failed steps follow
+`references/parallelization.md` section 5: only their dependents are held.
+
+## 6. Inline runner for small steps
+
+Opening a terminal and starting a full CLI session has a fixed cost that
+dominates a small step. A step the dependency map marks **inline**
+(`references/parallelization.md` section 1) skips the terminal:
+
+- The Orchestrator writes the same brief file and starts the Task Agent
+  with the inline `Agent` tool (a general-purpose type that can edit),
+  `model: "sonnet"`, `run_in_background: true`, and a prompt of
+  "Read <brief path> and execute it exactly as written."
+- It is still a Level 1 Task Agent with the same brief, owned files, rules
+  and result file. The only differences: no terminal name, and it cannot
+  spawn Research Sub-agents (inline agents cannot nest), so it relies on
+  `.dev/research/` and its own targeted reads.
+- It cannot talk to the Lead directly. On anything that needs the Lead, it
+  writes a `Blocked` result with the `escalate_to_lead` payload and stops;
+  the Orchestrator escalates in the main session and relaunches the step
+  (inline or in a terminal) with the answer in the brief.
+- Record it in the scratchpad as `Runner: inline`.
+
+If an inline step turns out bigger than expected (it needs research or
+several escalations), relaunch it in a terminal instead.

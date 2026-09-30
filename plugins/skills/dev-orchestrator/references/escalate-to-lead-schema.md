@@ -28,6 +28,10 @@ harness.
   (`orch-s[N]-[short-name]`), where the Lead can answer it
   directly, and also writes `Status: Blocked` plus the JSON payload to its
   result file so the Orchestrator knows the step is halted.
+- **Inline Task Agent (Level 1, small steps)**: cannot reach the Lead. It
+  writes `Status: Blocked` plus the JSON payload to its result file and
+  stops; the Orchestrator escalates in the Lead's main session and
+  relaunches the step with the answer in its brief.
 - **Research Sub-agent (Level 2)**: never escalates. It reports the open
   question in its synthesis; the Task Agent decides whether to escalate.
 
