@@ -171,15 +171,19 @@ dominates a small step. A step the dependency map marks **inline**
 - The Orchestrator writes the same brief file and starts the Task Agent
   with the inline `Agent` tool (a general-purpose type that can edit),
   `model: "sonnet"`, `run_in_background: true`, and a prompt of
-  "Read <brief path> and execute it exactly as written."
+  "Read <brief path> and execute it exactly as written. Reply only with
+  `done: <result path>`." Its reply lands in the Orchestrator's own
+  context, so it must stay one line; everything else goes in the result
+  file, which the Orchestrator reads like any other.
 - It is still a Level 1 Task Agent with the same brief, owned files, rules
   and result file. The only differences: no terminal name, and it cannot
   spawn Research Sub-agents (inline agents cannot nest), so it relies on
   `.dev/research/` and its own targeted reads.
 - It cannot talk to the Lead directly. On anything that needs the Lead, it
   writes a `Blocked` result with the `escalate_to_lead` payload and stops;
-  the Orchestrator escalates in the main session and relaunches the step
-  (inline or in a terminal) with the answer in the brief.
+  the Orchestrator escalates in the main session, logs the answer in
+  `.dev/tasks/_decisions.md`, and relaunches the step (inline or in a
+  terminal) with a `## Previous attempt` section holding the answer.
 - Record it in the scratchpad as `Runner: inline`.
 
 If an inline step turns out bigger than expected (it needs research or

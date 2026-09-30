@@ -17,6 +17,8 @@ Your brief gives you one question and a scope. Work only from it.
    project root, a graphify skill or MCP tool, or `command -v graphify`. If
    it is, use it FIRST to map the dependencies and relations relevant to
    the question. Never build or rebuild a graph inside the project.
+   If the brief lists "Files changed since the graph was built", do not
+   trust any graph edge that touches those files; read them directly.
 2. Fill gaps with targeted searches and reads. Confirm any graph edge that
    matters with a direct read (`path:line`).
 3. Reply with at most ~15 lines: answer, key files (`path:line`), relevant

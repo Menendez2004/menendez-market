@@ -26,9 +26,12 @@ Orchestrator checks once:
   again in this task.
 - Nothing available -> record `graphify: not available`. Never install it.
 
-The graph is not rebuilt as steps change the code. Research happens mostly
-before edits, and every edge an agent acts on is confirmed by a direct read
-anyway (section 2). Rebuild only if the Lead asks.
+The graph is not rebuilt as steps change the code, so it goes stale as
+steps complete. To keep that from misleading agents, every Research
+Sub-agent brief written after a step has completed lists "Files changed
+since the graph was built" (the Files touched of completed steps). Graph
+edges that touch those files are not trusted: the sub-agent reads those
+files directly instead. Rebuild only if the Lead asks.
 
 ## 1. Availability check (always first)
 

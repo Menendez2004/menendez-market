@@ -114,7 +114,9 @@ When a check fails, the Orchestrator attributes it before reporting:
    owns each failing file (or "no owner" for files no step touched), and the
    relevant output.
 4. Offer to relaunch only the owning step's Task Agent, with the same brief
-   plus a `## Fix` section holding that step's errors. It runs on the same
+   plus a `## Previous attempt` section (its result and
+   `git diff --stat -- <owned files>`) and a `## Fix` section holding that
+   step's errors. It runs on the same
    runner as before and fixes only those errors in its owned files.
 5. Only if the Lead agrees: relaunch, wait, merge, then rerun the checks
    once and report again. Never start another round on your own.
