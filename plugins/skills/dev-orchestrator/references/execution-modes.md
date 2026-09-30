@@ -48,17 +48,19 @@ A simple task becomes a one-step plan (`Source: Orchestrator, simple task`).
 
 Two options -- pick the one that fits, or offer both to the Lead:
 
-- **Propose a plan with the strongest model.** In Claude Code, a single
-  one-off `Agent` call with `model: "opus"`, given the task and project
-  context, asked to return a numbered step-by-step plan. Planning-only: it
-  writes no code and touches no files. In harnesses without a model override,
-  use the strongest configured model and note which one produced the plan.
+- **Propose a plan in plan mode under `opusplan`.** In Claude Code, the
+  Orchestrator session runs on `opusplan`, so while in plan mode Opus drafts
+  a numbered step-by-step plan. Plan mode is read-only: it writes no code and
+  touches no files. If the session is not on `opusplan`, ask the Lead to
+  switch (`/model opusplan`) first. In other harnesses, use the strongest
+  configured model and note which one produced the plan
+  (`references/models.md`).
 - **Request the plan from the Lead** via `escalate_to_lead`
   (`reason: ambiguous_requirement`), e.g. when the task is too open-ended to
   plan responsibly.
 
 An Orchestrator-proposed plan is a draft until the Lead approves it. Record
-`Source: Orchestrator-proposed (opus), approved by Lead on <date>`.
+`Source: Orchestrator-proposed (opusplan), approved by Lead on <date>`.
 
 Each plan step should be describable in one or two sentences, because that is
 what one Task Agent receives.

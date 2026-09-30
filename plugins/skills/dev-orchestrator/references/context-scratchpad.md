@@ -46,7 +46,7 @@ conversation memory.
 
 ## Plan
 
-Source: <Lead-provided | Orchestrator-proposed (opus), approved by Lead on <date> | Orchestrator, simple task>
+Source: <Lead-provided | Orchestrator-proposed (opusplan), approved by Lead on <date> | Orchestrator, simple task>
 
 <The plan as a numbered list. If Lead-provided, copied verbatim -- never
 reworded.>
@@ -61,6 +61,7 @@ co-dependencies, as shown to the Lead (references/parallelization.md).>
 - Execution mode: <single session | multi-agent (sequential) | multi-agent (waves)>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
 - graphify: <available (existing graph / skill / CLI) | not available>
+- Models: <planning / execution / research models actually used>
 
 ## Decisions Log
 
