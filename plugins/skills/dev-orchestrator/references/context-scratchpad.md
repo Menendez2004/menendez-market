@@ -15,7 +15,12 @@ conversation memory.
   open and read it directly at any time without tooling.
 - Task Agent briefs and results live in `.dev/tasks/` (create it if needed).
 - Footprint research syntheses live in `.dev/research/`, one file per step,
-  written by the Orchestrator from its Research Sub-agents' replies. A Task
+  written by the Orchestrator from its Research Sub-agents' replies. Each
+  file starts with `Taken after: <steps Complete at that time, or "no step
+  had run">` and is rewritten with a new header when refreshed.
+- `.dev/tasks/_decisions.md` mirrors the `Decisions Log`: every Lead
+  decision is appended there as soon as it is logged. It is the only
+  shared file Task Agents read. A Task
   Agent reads only the file its brief names.
 - `.dev/` holds the Lead's task, decisions and agent notes, so it must not end
   up in commits. If `.dev/` is not in `.gitignore`, ask the Lead to add it (or
@@ -33,6 +38,7 @@ conversation memory.
     orchestrator.md
     tasks/
       _rules.md                       # Task Agent rules, copied once per task
+      _decisions.md                   # Lead decisions, append-only (Orchestrator writes, Task Agents read)
       step-1-<short-name>.md          # brief (Orchestrator writes)
       step-1-<short-name>.result.md   # result (Task Agent writes)
       step-2-<short-name>.md
@@ -49,8 +55,9 @@ conversation memory.
 
 ## State
 
-<Rewritten in place after every result; at most ~15 lines. The only section
-read before every launch.>
+<At most ~15 lines. The only section read before every launch. Recomputed
+after every result from the files in .dev/tasks/, never edited from memory
+(see "Recomputing State" below).>
 - Mode: <single session | multi-agent, cap N>
 - Complete: <step numbers>
 - Running: <step: runner>
@@ -126,6 +133,29 @@ shown to the Lead (references/parallelization.md).>
   are append-only, so the Lead can always reconstruct how the project got to
   its current state.
 
+## Recomputing State
+
+`## State` must match the files, not the Orchestrator's memory of them.
+After every merge, rebuild it from `.dev/tasks/`:
+
+```bash
+# Status of every result, and whether it has been merged
+for f in .dev/tasks/step-*.result.md; do
+  [ -f "$f" ] || continue
+  m=unmerged; [ -f "$f.merged" ] && [ ! "$f" -nt "$f.merged" ] && m=merged
+  printf '%s %s %s\n' "$f" "$(grep -m1 '^- Status:' "$f")" "$m"
+done
+ls .dev/tasks/step-*.md | grep -v '\.result\.md'   # briefs = launched steps
+```
+
+- Complete / Blocked / Failed: from the `Status:` lines.
+- Running: a brief with no result.
+- Ready next and Held: apply the launch rule
+  (`references/parallelization.md` section 3) to those statuses.
+
+If the rebuilt State disagrees with what you expected, trust the files and
+log the difference in the `Decisions Log`.
+
 ## Resuming after an interruption
 
 If a session starts and `.dev/orchestrator.md` already exists for the same
@@ -148,5 +178,5 @@ Orchestrator reads the whole scratchpad.
    Show the Lead `git diff --stat` for those files and ask whether to
    relaunch it on top of them or have the Lead discard them first. Never
    discard them yourself (`rules/critical-no-autonomous-git.md`).
-4. Rewrite `## State`, log the resume in the `Decisions Log`, and continue
+4. Recompute `## State` (above), log the resume in the `Decisions Log`, and continue
    with the launch rule (`references/parallelization.md` section 3).

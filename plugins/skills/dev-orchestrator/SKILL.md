@@ -13,7 +13,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 6
+  version: 7
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -151,13 +151,18 @@ ordering constraints.
   Level 1, still read-only and still unable to spawn).
 - **Multi-agent**: launch every ready step, one Task Agent per step:
   1. Once per task, copy `references/task-agent-rules.md` verbatim to
-     `.dev/tasks/_rules.md`. Then write the step brief to
+     `.dev/tasks/_rules.md` and create `.dev/tasks/_decisions.md` with the
+     `Decisions Log` entries so far (or "none yet"). Then write the step brief to
      `.dev/tasks/step-[N]-[short-name].md`. It contains ONLY that step's
      instructions, its owned files, the steps running at the same time, a
      scoped slice of state (task goal, decisions that affect the step,
-     output of the steps it needs), the key findings of its research, and a
-     pointer to `_rules.md` -- never the rules text itself, never the full
-     scratchpad and never the chat history. See
+     output of the steps it needs, notes of indirect dependencies), the key
+     findings of its research with which steps completed since it was
+     taken, and a pointer to `_rules.md` -- never the rules text itself,
+     never the full scratchpad and never the chat history. If steps
+     completed since the research touched this step's files, refresh the
+     research first. A relaunch adds a `## Previous attempt` section with
+     the earlier result and `git diff --stat` of its owned files. See
      `rules/high-scoped-context.md`. Template:
      `references/agent-hierarchy.md`.
   2. **terminal** steps: open a new tab/window/pane in the terminal the user
@@ -167,8 +172,10 @@ ordering constraints.
      the same brief. See `references/terminal-launch.md`.
   3. Wait in the background for the first new result among the running
      steps (Task Agents write `.result.md.tmp` and rename it, so a result
-     file is always complete). Merge it into the scratchpad, then launch
-     whatever became ready. Waiting and edge cases:
+     file is always complete). Merge it into the scratchpad, append any Lead
+     decision to `.dev/tasks/_decisions.md` (Task Agents re-read it before
+     finishing, so running steps see it too), then launch whatever became
+     ready. Waiting and edge cases:
      `references/terminal-launch.md` section 5.
   4. `Blocked` + `needs-file`: relaunch that step once no running step owns
      the file, instead of letting two agents edit it. Any other `Blocked`,
@@ -216,8 +223,8 @@ Details: `references/graphify.md`, `rules/critical-research-read-only.md`.
 
 `.dev/orchestrator.md` is the single shared source of project
 state. Only you (the Orchestrator) write it; Task Agents write their own
-`.result.md` file and you merge it. Keep its `## State` section current
-and read that section (plus only the parts a step needs) before each
+`.result.md` file and you merge it. Recompute its `## State` section from
+the files in `.dev/tasks/` after every result, and read that section (plus only the parts a step needs) before each
 launch, instead of the whole file; update it after every result. If a
 session starts with an existing scratchpad, resume from it instead of
 starting over. Format, read discipline and resume procedure:
