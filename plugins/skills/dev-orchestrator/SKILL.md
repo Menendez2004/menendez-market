@@ -13,7 +13,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 5
+  version: 6
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -62,6 +62,10 @@ Sub-agents, pinned through `CLAUDE_CODE_SUBAGENT_MODEL`). How to set each:
 
 ### 1. Receive the task (and the plan, if any)
 
+If `.dev/orchestrator.md` already holds this task in progress, do not start
+over: resume from it (`references/context-scratchpad.md` -> "Resuming after
+an interruption").
+
 Most of the time the Lead hands you the plan directly. Before anything else,
 check for a **Lead-provided plan** in:
 
@@ -102,8 +106,11 @@ For plans with more than one step, work out which steps can run at the same
 time and which are co-dependent. For each step, record what it writes,
 reads, and needs from other steps, plus any single-writer hotspot it touches
 (lockfiles, manifests, migrations, generated/index files, global config).
-Use a read-only Research Sub-agent (graphify first) to pin down footprints,
-and save each synthesis to `.dev/research/step-[N]-[short-name].md` so the
+First, if graphify is available but has no graph, ask the Lead once whether
+to build it now so every agent can use it (`references/graphify.md` section
+0). Then pin down footprints with read-only Research Sub-agents, one per
+step, **all launched in a single message** so they run in parallel, and
+save each synthesis to `.dev/research/step-[N]-[short-name].md` so the
 step's Task Agent starts from it instead of exploring again. Mark each step
 `terminal` (default) or `inline` (small: at most 2 known owned files, no
 hotspot, no expected escalation).
@@ -126,6 +133,12 @@ do not assume a default:
 
 > "Do you want to run this as a single session, or use multi-agents?"
 
+**Exception:** if the Lead's request already states the mode explicitly
+("single session", "multi-agent", "multi-agent, max 3"), do not ask again.
+Show the map, say which mode and cap you are using because the Lead said
+so, and start. Never infer the mode from the task's size or wording that
+does not name it.
+
 In multi-agent mode the map shown is the schedule, unless the Lead asks for
 strictly sequential execution (cap 1), changes the cap or a runner, or adds
 ordering constraints.
@@ -137,11 +150,13 @@ ordering constraints.
   Research Sub-agents for what that research does not answer (they are then
   Level 1, still read-only and still unable to spawn).
 - **Multi-agent**: launch every ready step, one Task Agent per step:
-  1. Write the step brief to `.dev/tasks/step-[N]-[short-name].md`. It
-     contains ONLY that step's instructions, its owned files, the steps
-     running at the same time, a scoped slice of state (task goal,
-     decisions that affect the step, output of the steps it needs), the key
-     findings of its research, and the Task Agent rules -- never the full
+  1. Once per task, copy `references/task-agent-rules.md` verbatim to
+     `.dev/tasks/_rules.md`. Then write the step brief to
+     `.dev/tasks/step-[N]-[short-name].md`. It contains ONLY that step's
+     instructions, its owned files, the steps running at the same time, a
+     scoped slice of state (task goal, decisions that affect the step,
+     output of the steps it needs), the key findings of its research, and a
+     pointer to `_rules.md` -- never the rules text itself, never the full
      scratchpad and never the chat history. See
      `rules/high-scoped-context.md`. Template:
      `references/agent-hierarchy.md`.
@@ -170,9 +185,12 @@ step asks for it; executing test suites is not.
 Once, **after every plan step is complete**, the Orchestrator runs the
 project's fast checks (lint, format check, typecheck, build/compile, and the
 project's own validators) and records the outcome in the scratchpad. Task
-Agents do not run checks per step. If a check fails, report the output to
-the Lead and ask how to proceed; do not loop on fixes on your own. Details:
-`rules/high-checks-not-tests.md`.
+Agents do not run checks per step. If a check fails, match each error's
+file paths against the steps' owned files and report to the Lead which step
+caused it, with the output. Offer to relaunch only that step's Task Agent
+with the error in a `## Fix` section of its brief; do it only if the Lead
+agrees, then rerun the checks once. Never loop on fixes on your own.
+Details: `rules/high-checks-not-tests.md`.
 
 ### 8. Research Sub-agents and graphify
 
@@ -198,8 +216,12 @@ Details: `references/graphify.md`, `rules/critical-research-read-only.md`.
 
 `.dev/orchestrator.md` is the single shared source of project
 state. Only you (the Orchestrator) write it; Task Agents write their own
-`.result.md` file and you merge it. Read it before every step; update it
-after every step. Format: `references/context-scratchpad.md`.
+`.result.md` file and you merge it. Keep its `## State` section current
+and read that section (plus only the parts a step needs) before each
+launch, instead of the whole file; update it after every result. If a
+session starts with an existing scratchpad, resume from it instead of
+starting over. Format, read discipline and resume procedure:
+`references/context-scratchpad.md`.
 
 ### 10. Escalation -- ask the Lead, never guess
 
@@ -213,8 +235,14 @@ any of:
 
 Task Agents escalate from their own terminal (the Lead can see it) and mark
 the step `Blocked` in their result file. Inline Task Agents cannot reach the
-Lead: they write the payload in a `Blocked` result and you escalate it. Research Sub-agents never escalate:
-they report the open question to their Task Agent.
+Lead: they write the payload in a `Blocked` result and you escalate it.
+Research Sub-agents never escalate: they report the open question to their
+Task Agent.
+
+When several escalations are pending for you at once (plan gaps found in
+validation, several inline steps blocked, failed checks), batch them into a
+single message to the Lead instead of asking one by one. Steps not blocked
+keep running meanwhile.
 
 Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 `references/escalate-to-lead-schema.md`.
@@ -233,6 +261,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 ## References
 
 - `references/agent-hierarchy.md` -- levels, roles, permissions, briefing templates.
+- `references/task-agent-rules.md` -- rules every Task Agent follows (copied to `.dev/tasks/_rules.md`).
 - `references/models.md` -- model per role (opusplan, latest Sonnet, Sonnet 4.6).
 - `references/parallelization.md` -- dependency map, dependency-driven scheduling, blocked steps.
 - `references/terminal-launch.md` -- terminal detection, launch commands, background waiting, inline runner.

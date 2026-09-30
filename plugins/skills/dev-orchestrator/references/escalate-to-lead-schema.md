@@ -44,6 +44,20 @@ structured choice UI instead of free text. The JSON block is still the
 canonical, portable form; `AskUserQuestion` is a presentation-layer
 optimization for one harness, not a replacement for the protocol.
 
+### Batching
+
+When several escalations are pending for the Orchestrator at the same time
+(plan gaps found in validation, several inline steps `Blocked`, failed
+checks), raise them together in **one** message instead of one per turn:
+one JSON block per escalation, each prefixed with the step it concerns,
+then a single plain-language summary that numbers the questions. With
+`AskUserQuestion`, put them in one call (up to its question limit; split
+the rest into the next call). Each escalation still halts only what it
+blocks: steps that do not depend on any of them keep running.
+
+Task Agents in terminals keep escalating in their own terminal; they are not
+batched, because the Lead answers them there.
+
 ## Schema
 
 ```json

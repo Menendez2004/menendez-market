@@ -87,8 +87,14 @@ its brief carries only the question and scope, not the Task Agent's history.
 
 ## Task Agent brief template
 
+The rules every Task Agent follows are the same for every step, so they are
+not repeated in each brief. Before launching the first Task Agent, the
+Orchestrator copies `references/task-agent-rules.md` verbatim to
+`.dev/tasks/_rules.md`, once per task, and each brief points at it. Briefs
+stay short and the rules stay identical across steps.
+
 The Orchestrator writes this to `.dev/tasks/step-[N]-[short-name].md` before
-launching the terminal:
+launching the Task Agent:
 
 ```markdown
 # Task Agent brief -- step <N>: <short step title>
@@ -121,37 +127,17 @@ files and symbols to change (path:line), dependents, risks; graphify used
 yes/no. Then: "Full synthesis: .dev/research/step-<N>-<short-name>.md", or
 "none".>
 
-## Rules you must follow
+## Rules
 
-- You are a Level 1 Task Agent. Execute only the step above.
-- Start from "Research already done". Do not re-investigate what it
-  answers. For anything it does not answer, you MAY spawn read-only
-  Research Sub-agents (subagent_type "dev-orchestrator:orch-researcher",
-  no model parameter) with one question and a scope each.
-- You MUST NOT launch other Task Agents, open terminals, or spawn any agent
-  that can write.
-- Edit only your owned files. If you must edit anything else, do not edit
-  it: mark the step Blocked with `needs-file: <path>` in your result file and
-  stop (other agents may be editing it right now).
-- Never commit, push, merge or open a PR. Leave changes uncommitted.
-- Never run tests, and do not run checks (lint, typecheck, build): the
-  Orchestrator runs checks once after the whole task. Writing test files is
-  fine if your step asks for it.
-- On ambiguity, an architectural choice, or any destructive action: emit
-  escalate_to_lead (references/escalate-to-lead-schema.md) in this terminal,
-  mark the step Blocked in your result file, and stop.
-- Everything you need is in this brief and the research file it names. Do
-  not read .dev/orchestrator.md or other steps' briefs/results/research.
-- If the Lead answers an escalation in this terminal, record the question and
-  answer under `Lead decisions` in your result file.
-- Do not edit .dev/orchestrator.md. When done (or blocked), write the
-  result format to .dev/tasks/step-<N>-<short-name>.result.md.tmp, then
-  rename it to .dev/tasks/step-<N>-<short-name>.result.md (mv). Never write
-  the .result.md path directly. If the Lead later answers an escalation
-  here and you continue, replace the result the same way.
+Read `.dev/tasks/_rules.md` before doing anything and follow it. It is part
+of this brief. Your step number and short name are in the title and the
+terminal name above.
 ```
 
 ## Task Agent result format
+
+(Also included in `references/task-agent-rules.md`, which is what Task
+Agents actually read.)
 
 ```markdown
 # Result -- step <N>: <short step title>
