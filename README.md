@@ -23,7 +23,7 @@ Marketplace de plugins para Claude Code.
 
 | Plugin | Descripción |
 | --- | --- |
-| `dev-orchestrator` | Human-in-the-loop development orchestrator with a 2-level hierarchy: adopts the Lead's plan (or proposes one with opus if none is given), launches one Task Agent per step in its own terminal, running independent steps in parallel waves, and each agent can use read-only research sub-agents that prioritize graphify. Never runs tests; runs checks once at the end. Escalates to the Lead on ambiguity or destructive actions. |
+| `dev-orchestrator` | Human-in-the-loop development orchestrator with a 2-level hierarchy: adopts the Lead's plan (or drafts one in plan mode under opusplan if none is given), launches one Task Agent per step in its own terminal (or inline for small steps), starting each step as soon as its dependencies finish, and each agent can use read-only research sub-agents (Sonnet 4.6) that prioritize graphify. Execution runs on the latest Sonnet. Never runs tests; runs checks once at the end. Escalates to the Lead on ambiguity or destructive actions. |
 | `qa-orchestrator` | Orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes. Usa qa-happy-path, qa-api-adversary y qa-debugger. |
 | `qa-happy-path` | Prueba los flujos principales de la UI con Playwright y reporta bugs con pasos de reproducción. |
 | `qa-api-adversary` | Intenta romper la API: auth, validación de entrada, duplicados, condiciones de carrera y requests malformados. |

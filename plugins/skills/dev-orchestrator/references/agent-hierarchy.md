@@ -44,6 +44,12 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 - An independent, full CLI session running in its own terminal named
   `orch-s[N]-[short-name]`, on the latest Sonnet (`claude --model sonnet`).
+  Small steps can instead run as an **inline** Task Agent in the
+  Orchestrator's session, with the same brief and rules but no terminal and
+  no Research Sub-agents (`references/terminal-launch.md` section 6).
+- Starts from the research already in its brief and in
+  `.dev/research/step-[N]-[short-name].md`; spawns a Research Sub-agent only
+  for questions that research does not answer.
 - Executes exactly **one** plan step: the one in its brief.
 - May modify code needed for that step (non-destructive changes only;
   destructive ones go through `escalate_to_lead`).
@@ -52,16 +58,17 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
   investigate before editing, so exploration does not fill its own context.
 - Must not: launch other Task Agents, open terminals, touch other steps'
   scope, or commit/push/merge/open PRs.
-- Writes its outcome to `.dev/tasks/step-[N]-[short-name].result.md` and
-  never edits the shared scratchpad directly.
+- Writes its outcome to `.dev/tasks/step-[N]-[short-name].result.md.tmp`
+  and renames it to `.result.md` (atomic), and never edits the shared
+  scratchpad directly.
 
 ### Research Sub-agent (Level 2)
 
 - Ephemeral, spawned inline by a Task Agent (or by the Orchestrator in
   single-session mode).
-- Runs on Sonnet 4.6, pinned by `CLAUDE_CODE_SUBAGENT_MODEL` in the spawning
-  session (`references/models.md`). Never pass a `model` parameter on the
-  `Agent` call.
+- Runs on Sonnet 4.6 through the plugin's `orch-researcher` agent
+  (`references/models.md`). Never pass a `model` parameter on the `Agent`
+  call.
 - **Strictly read-only**: reads files, runs searches, reads logs and docs,
   runs read-only analysis tools. No `Edit`/`Write`, no state-changing shell
   commands, no git mutations.
@@ -71,10 +78,11 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Returns a short synthesis (see template below) and ends.
 - Cannot spawn any agent and never talks to the Lead.
 
-In Claude Code, prefer a built-in read-only subagent type (e.g.
-`subagent_type: "Explore"`) so the restriction is enforced by the tool set,
-not just by the prompt. Never use a subagent type that inherits the parent's
-conversation (a fork): the Research Sub-agent starts with only its brief, and
+In Claude Code, spawn it with `subagent_type:
+"dev-orchestrator:orch-researcher"`: its definition has no `Edit`, `Write`
+or `Agent` tool, so the restriction is enforced by the tool set, not just by
+the prompt (fallback: `Explore`, see `references/models.md`). Never use a
+subagent type that inherits the parent's conversation (a fork): the Research Sub-agent starts with only its brief, and
 its brief carries only the question and scope, not the Task Agent's history.
 
 ## Task Agent brief template
@@ -95,9 +103,9 @@ Terminal / session name: orch-s<N>-<short-name>
 
 <The step's Writes from the dependency map. You may edit only these.>
 
-## Running in parallel with you
+## Running at the same time as you
 
-<Other steps in this wave and their owned files, or "none".>
+<Other steps running when you launch, with their owned files, or "none".>
 
 ## Context you need (scoped -- not the full scratchpad)
 
@@ -106,13 +114,20 @@ Terminal / session name: orch-s<N>-<short-name>
 - Output of the steps you need: <for each step in this step's Needs: files
   touched + "Notes for next steps" from its result file, or "none">
 
+## Research already done (start here)
+
+<Key findings from the Orchestrator's footprint research for this step:
+files and symbols to change (path:line), dependents, risks; graphify used
+yes/no. Then: "Full synthesis: .dev/research/step-<N>-<short-name>.md", or
+"none".>
+
 ## Rules you must follow
 
 - You are a Level 1 Task Agent. Execute only the step above.
-- You MAY spawn read-only Research Sub-agents with the Agent tool to
-  investigate before editing. Brief them with the Research template in
-  references/agent-hierarchy.md: read-only, graphify first if available,
-  no further agents, short synthesis.
+- Start from "Research already done". Do not re-investigate what it
+  answers. For anything it does not answer, you MAY spawn read-only
+  Research Sub-agents (subagent_type "dev-orchestrator:orch-researcher",
+  no model parameter) with one question and a scope each.
 - You MUST NOT launch other Task Agents, open terminals, or spawn any agent
   that can write.
 - Edit only your owned files. If you must edit anything else, do not edit
@@ -125,12 +140,15 @@ Terminal / session name: orch-s<N>-<short-name>
 - On ambiguity, an architectural choice, or any destructive action: emit
   escalate_to_lead (references/escalate-to-lead-schema.md) in this terminal,
   mark the step Blocked in your result file, and stop.
-- Everything you need is in this brief. Do not read .dev/orchestrator.md or
-  other steps' briefs/results.
+- Everything you need is in this brief and the research file it names. Do
+  not read .dev/orchestrator.md or other steps' briefs/results/research.
 - If the Lead answers an escalation in this terminal, record the question and
   answer under `Lead decisions` in your result file.
-- Do not edit .dev/orchestrator.md. When done (or blocked),
-  write .dev/tasks/step-<N>-<short-name>.result.md using the result format.
+- Do not edit .dev/orchestrator.md. When done (or blocked), write the
+  result format to .dev/tasks/step-<N>-<short-name>.result.md.tmp, then
+  rename it to .dev/tasks/step-<N>-<short-name>.result.md (mv). Never write
+  the .result.md path directly. If the Lead later answers an escalation
+  here and you continue, replace the result the same way.
 ```
 
 ## Task Agent result format
@@ -148,6 +166,10 @@ Terminal / session name: orch-s<N>-<short-name>
 ```
 
 ## Research Sub-agent brief template
+
+With `orch-researcher` the rules below are already in the agent's
+definition, so the brief only needs the `Question` and `Scope` lines. With
+the `Explore` fallback, send the whole text.
 
 ```text
 You are a Level 2 Research Sub-agent. You are STRICTLY READ-ONLY: do not
