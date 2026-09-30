@@ -19,8 +19,16 @@ For every plan step, before the mandatory pause, record:
 | **Needs** | Earlier steps whose output this step uses (a new function, type, table, endpoint, config key, package) | Step text, then Writes/Reads overlap |
 | **Shared resources** | Single-writer hotspots it touches (see list below) | Writes |
 
-In single-session mode the Orchestrator may run these Research Sub-agents
-itself; in multi-agent mode it does so before launching anything.
+The Orchestrator runs this research itself, before the mandatory pause, in
+both modes. It uses the graph from `references/graphify.md` section 0 when
+there is one.
+
+**Research all steps at once.** Launch one Research Sub-agent per step (or
+per group of up to 3 small steps), all in a **single message** with several
+`Agent` calls, so they run in parallel instead of one after another. Each
+brief asks for that step's Writes, Reads, Needs and hotspots, plus the key
+files and symbols (`path:line`) its Task Agent will need. Mapping the
+dependencies between steps happens after all of them return.
 
 Be conservative: if a step's footprint cannot be pinned down (e.g. "refactor
 wherever needed"), mark its Writes as `unknown`.
@@ -117,7 +125,8 @@ Step 4 starts as soon as step 3 is done, even if step 1 is still running.
 
 ## 4. Show it to the Lead in the mandatory pause
 
-Show the preview, then ask the mandatory question verbatim. If the Lead
+Show the preview, then ask the mandatory question verbatim (unless the
+Lead's request already named the mode, see `SKILL.md` step 5). If the Lead
 chooses multi-agent, the launch rule with this dependency map is the
 schedule; the Lead may instead ask for strictly sequential execution
 (cap 1), change the cap, or add ordering constraints.

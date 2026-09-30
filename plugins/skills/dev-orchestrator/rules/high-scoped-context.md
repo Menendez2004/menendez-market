@@ -33,7 +33,8 @@ is one question and a scope, and it returns ~10 lines.
   task goal, decisions that affect this step, the output of the steps it
   `Needs`, and the key findings of its own footprint research (with a
   pointer to `.dev/research/step-[N]-[short-name].md`). Never the full
-  scratchpad, never the chat history.
+  scratchpad, never the chat history. The fixed Task Agent rules are not
+  pasted either: the brief points at `.dev/tasks/_rules.md`.
 - Task Agents do not read the scratchpad or other steps' briefs, results or
   research. They start from their own research and do not re-investigate
   what it already answers.
