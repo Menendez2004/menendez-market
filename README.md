@@ -38,18 +38,20 @@ Marketplace de plugins para Claude Code.
 plugins/
   skills/
     dev-orchestrator/       # SKILL.md + references/, rules/
-    qa-orchestrator/        # SKILL.md + references/, rules/, assets/
-    qa-happy-path/          # SKILL.md + rules/
-    qa-api-adversary/       # SKILL.md + rules/
-    qa-debugger/            # SKILL.md + rules/
-    qa-personality-builder/ # SKILL.md + references/, rules/
+    qa/                     # todas las skills de QA
+      qa-orchestrator/        # SKILL.md + references/, rules/, assets/
+      qa-happy-path/          # SKILL.md + rules/
+      qa-api-adversary/       # SKILL.md + rules/
+      qa-debugger/            # SKILL.md + rules/
+      qa-personality-builder/ # SKILL.md + references/, rules/
 ```
 
 Cada entrada de `marketplace.json` usa `"strict": false` y declara su skill con
-`"skills": ["./plugins/skills/<nombre>"]`, así cada plugin se instala por separado
-y solo carga su propia skill.
+`"skills": ["./plugins/skills/<nombre>"]` (o `./plugins/skills/qa/<nombre>` para las
+de QA), así cada plugin se instala por separado y solo carga su propia skill.
 
-Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md`, agrega una
+Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` (las de QA van
+en `plugins/skills/qa/<nombre>/`), agrega una
 entrada en `.claude-plugin/marketplace.json` y valida con:
 
 ```bash
