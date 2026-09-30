@@ -23,16 +23,20 @@ grows with every step, and it can steer the agent toward other steps' work.
 Step 5's brief contains: its step text, owned files, parallel peers, a
 two-line task goal, the one decision about error codes that affects it, and
 step 3's "Notes for next steps" (the new function name). The Research
-Sub-agent it spawns is a fresh read-only Explore agent whose brief is one
-question and a scope, and it returns ~10 lines.
+Sub-agent it spawns is a fresh read-only orch-researcher agent whose brief
+is one question and a scope, and it returns ~10 lines.
 ```
 
 **Rules:**
 
 - A Task Agent brief carries only: its step, owned files, parallel peers, the
-  task goal, decisions that affect this step, and the output of the steps it
-  `Needs`. Never the full scratchpad, never the chat history.
-- Task Agents do not read the scratchpad or other steps' briefs and results.
+  task goal, decisions that affect this step, the output of the steps it
+  `Needs`, and the key findings of its own footprint research (with a
+  pointer to `.dev/research/step-[N]-[short-name].md`). Never the full
+  scratchpad, never the chat history.
+- Task Agents do not read the scratchpad or other steps' briefs, results or
+  research. They start from their own research and do not re-investigate
+  what it already answers.
 - Research Sub-agents start from their brief alone (no fork of the parent's
   conversation) and return a short synthesis; result files keep one line per
   research conclusion, not the synthesis.

@@ -48,17 +48,19 @@ A simple task becomes a one-step plan (`Source: Orchestrator, simple task`).
 
 Two options -- pick the one that fits, or offer both to the Lead:
 
-- **Propose a plan with the strongest model.** In Claude Code, a single
-  one-off `Agent` call with `model: "opus"`, given the task and project
-  context, asked to return a numbered step-by-step plan. Planning-only: it
-  writes no code and touches no files. In harnesses without a model override,
-  use the strongest configured model and note which one produced the plan.
+- **Propose a plan in plan mode under `opusplan`.** In Claude Code, the
+  Orchestrator session runs on `opusplan`, so while in plan mode Opus drafts
+  a numbered step-by-step plan. Plan mode is read-only: it writes no code and
+  touches no files. If the session is not on `opusplan`, ask the Lead to
+  switch (`/model opusplan`) first. In other harnesses, use the strongest
+  configured model and note which one produced the plan
+  (`references/models.md`).
 - **Request the plan from the Lead** via `escalate_to_lead`
   (`reason: ambiguous_requirement`), e.g. when the task is too open-ended to
   plan responsibly.
 
 An Orchestrator-proposed plan is a draft until the Lead approves it. Record
-`Source: Orchestrator-proposed (opus), approved by Lead on <date>`.
+`Source: Orchestrator-proposed (opusplan), approved by Lead on <date>`.
 
 Each plan step should be describable in one or two sentences, because that is
 what one Task Agent receives.
@@ -70,26 +72,28 @@ After intake/planning the Orchestrator always asks the mandatory question
 (`references/parallelization.md`). Never infer the answer from the task's size.
 
 - **Single session** -> the Orchestrator executes each step in order itself,
-  updating the scratchpad after each, then runs the final checks once. It may use read-only Research
-  Sub-agents (`references/agent-hierarchy.md`).
-- **Multi-agent** -> wave by wave; for each step of the current wave the
-  Orchestrator:
+  updating the scratchpad after each, then runs the final checks once. It
+  starts each step from `.dev/research/` and may use read-only Research
+  Sub-agents for anything that research does not answer
+  (`references/agent-hierarchy.md`).
+- **Multi-agent** -> dependency-driven: the Orchestrator launches every
+  ready step (`references/parallelization.md` section 3), and for each one:
   1. writes the brief `.dev/tasks/step-[N]-[short-name].md`
-     (template in `references/agent-hierarchy.md`),
-  2. opens a new terminal in the user's terminal app named
-     `orch-s[N]-[short-name]` and starts an independent CLI
-     session on that brief (`references/terminal-launch.md`),
-  3. waits for every `.dev/tasks/step-[N]-[short-name].result.md` of the
-     wave,
-  4. merges the results into the scratchpad, and only then launches the
-     next wave.
+     (template in `references/agent-hierarchy.md`), including the key
+     findings from `.dev/research/step-[N]-[short-name].md`,
+  2. starts the Task Agent on that brief: in a new terminal named
+     `orch-s[N]-[short-name]` in the user's terminal app, or inline for a
+     step marked `inline` (`references/terminal-launch.md`),
+  3. waits in the background for the first new result among the running
+     steps (`references/terminal-launch.md` section 5),
+  4. merges that result into the scratchpad and launches whatever became
+     ready. A `Blocked` or `Failed` step holds only its dependents.
 
   After the last step, the Orchestrator runs the final checks once (see
   below).
 
-  Steps of the same wave run in parallel (several Task Agent terminals at
-  once). Waves come from the dependency map the Lead saw at the mandatory
-  pause; if the Lead asked for sequential, every wave has one step.
+  The concurrency cap (default 4) and the map come from what the Lead saw
+  at the mandatory pause; if the Lead asked for sequential, the cap is 1.
 
 ## 5. Final checks (once, at the end)
 

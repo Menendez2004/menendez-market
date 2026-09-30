@@ -8,7 +8,7 @@ tags: [planning, hitl, lead-plan]
 
 ```
 The Orchestrator reads the Lead's plan, decides step 3 could be split and
-step 4 is unnecessary, runs an opus planning pass "to improve it", and starts
+step 4 is unnecessary, runs an Opus planning pass "to improve it", and starts
 executing the new 5-step plan.
 ```
 
@@ -41,8 +41,9 @@ Lead's.
   the plan. Adopt, validate, move on to the mandatory pause.
 - Validation finds gaps; it never fixes them silently. Every change to the
   plan comes from the Lead.
-- Use `model: "opus"` to propose a plan **only** when no plan was provided
-  and the task is complex, and treat it as a draft until the Lead approves.
+- Draft a plan in plan mode under `opusplan` **only** when no plan was
+  provided and the task is complex, and treat it as a draft until the Lead
+  approves.
 
 **Why it matters:** The Lead writing the plan is the normal case, and it is
 where the architectural decisions live. Regenerating it wastes the strongest
