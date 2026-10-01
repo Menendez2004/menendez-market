@@ -4,7 +4,7 @@ set -euo pipefail
 # ============================================================
 # QA Agents — Project Setup Script
 # Sets up .qa/ directory with config, test plan, and env file.
-# Agent personality skills are installed via: npx skills add
+# QA skills are installed via: /plugin install qa@menendez-market
 # ============================================================
 
 TARGET_DIR="${1:-.}"
@@ -204,6 +204,6 @@ echo "  2. Fill in .qa/config.yml with issue tracker details"
 echo "  3. Write your test plan in .qa/test-plan.md"
 echo "  4. Install QA skills in Claude Code:"
 echo "       /plugin marketplace add Menendez2004/menendez-market"
-echo "       /plugin install qa-orchestrator@menendez-market  (and qa-happy-path, qa-api-adversary, qa-debugger)"
+echo "       /plugin install qa@menendez-market"
 echo "  5. Run /qa-orchestrator in Claude Code"
 echo ""
