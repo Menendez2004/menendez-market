@@ -2,9 +2,17 @@
 
 ## Sections
 
+### env — Project Environment
+Impact: HIGH
+Order: 1
+Rules for running commands in the project's own environment: its package
+manager, scripts and lockfile.
+
+- `env-package-manager.md` (HIGH)
+
 ### data — Test Data
 Impact: CRITICAL
-Order: 1
+Order: 2
 Rules for where test data and test doubles come from: the repo's factories and
 fake-data library, never hand-written objects, and always deterministic.
 
@@ -14,7 +22,7 @@ fake-data library, never hand-written objects, and always deterministic.
 
 ### iso — Isolation
 Impact: HIGH
-Order: 2
+Order: 3
 Rules for keeping each test focused on one unit and independent of every
 other test.
 
@@ -23,7 +31,7 @@ other test.
 
 ### struct — Test Structure
 Impact: HIGH
-Order: 3
+Order: 4
 Rules for how each test is laid out, which cases a suite must contain, and
 what it asserts.
 
@@ -33,7 +41,7 @@ what it asserts.
 
 ### verify — Verification
 Impact: CRITICAL
-Order: 4
+Order: 5
 Rules for running the generated tests and handling failures without touching
 production code.
 

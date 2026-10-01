@@ -50,6 +50,7 @@ Every generated or edited test must comply with the rules in `rules/`. See
 
 | Rule | File | Impact |
 |---|---|---|
+| Use the project's package manager; never default to npm | `rules/env-package-manager.md` | HIGH |
 | No hand-written test data or hand-rolled fakes | `rules/data-no-manual-mocks.md` | CRITICAL |
 | Reuse the repo's test tooling before adding anything | `rules/data-reuse-repo-tooling.md` | CRITICAL |
 | Seeded, deterministic data and time | `rules/data-deterministic.md` | HIGH |
@@ -89,10 +90,16 @@ Every generated or edited test must comply with the rules in `rules/`. See
 3. Find existing test helpers: factories, builders, fixtures and mocks, for
    example `tests/factories/`, `test/fixtures/`, `__mocks__/`, `testutils/`,
    `conftest.py`, `*Factory.*`, `*Builder.*`, `*.factory.*`.
-4. Open two or three existing test files next to the target, and copy their
+4. Detect the package manager from the `packageManager` field and the
+   lockfile (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`;
+   `uv.lock`, `poetry.lock` in Python). Use it for every command. Never
+   default to npm: if nothing identifies the package manager, ask (see
+   `rules/env-package-manager.md`).
+5. Open two or three existing test files next to the target, and copy their
    file location, naming, imports and `describe`/`test_` style.
-5. Record what you found: runner, assertion style, mocking library, data
-   library, factories, and the command to run a single test file. Use
+6. Record what you found: package manager, runner, assertion style, mocking
+   library, data library, factories, and the command to run a single test
+   file. Use
    `references/tooling-matrix.md` to map the stack to the right tools.
 
 If no fake-data library or factory exists, stop and ask before adding one
@@ -133,8 +140,8 @@ If no fake-data library or factory exists, stop and ask before adding one
 
 ### 5. Verify
 
-1. Run only the new or edited test file(s) with the repo's command, once
-   (`rules/verify-run-scoped.md`).
+1. Run only the new or edited test file(s), once, with the repo's command
+   through its package manager (`rules/verify-run-scoped.md`).
 2. If a test fails because the production code is wrong, do not change the
    production code and do not weaken the test: report it as a suspected bug
    (`rules/verify-no-prod-changes.md`).
@@ -170,6 +177,8 @@ report instead. Work only from the brief and the files it names.
 
 - Never edit production code; only test files and test helpers.
 - Never add a dependency without the user's explicit approval.
+- Never run npm (`npx`, `npm install`, `npm exec`) unless the project uses
+  npm; never create a lockfile the project does not have.
 - Never use `skip`, `only`, `xfail`, `@Disabled` or similar to get green.
 - Never hit real networks, databases, file systems or clocks from a unit
   test.
@@ -180,7 +189,7 @@ report instead. Work only from the brief and the files it names.
 ```
 ### Unit tests: <unit under test>
 **Mode:** A | B | C
-**Tooling:** <runner> · <mocking lib> · <data lib / factories>
+**Tooling:** <package manager> · <runner> · <mocking lib> · <data lib / factories>
 **Files:** <test files created/edited> · <factories created/edited>
 **Cases:** <n> tests — happy <n>, invalid input <n>, boundary <n>, errors <n>, side effects <n>
 **Run:** `<command>` → <passed>/<total> (or "not run: <reason>")
@@ -194,6 +203,7 @@ report instead. Work only from the brief and the files it names.
       or the fake-data library.
 - [ ] Every import of a test tool is already a project dependency (or the
       user approved adding it).
+- [ ] Every command uses the detected package manager; no stray lockfile.
 - [ ] Data library seeded; time and randomness controlled.
 - [ ] Every test has a visible Arrange / Act / Assert.
 - [ ] Each case-matrix category is covered or listed under "Not covered".
@@ -203,9 +213,9 @@ report instead. Work only from the brief and the files it names.
 ## Examples
 
 - **Generate:** "Write unit tests for `src/services/order-service.ts`" →
-  Mode A detects Vitest + `vi.mock` + `@faker-js/faker`, reuses
+  Mode A detects pnpm + Vitest + `vi.mock` + `@faker-js/faker`, reuses
   `test/factories/order.ts`, writes `order-service.test.ts` with 9 cases and
-  runs only that file.
+  runs only that file with `pnpm exec vitest run`.
 - **Fill gaps:** "Our `pricing.py` tests miss the discount branches" →
   Mode B maps existing cases, adds the 4 missing branch tests using the
   existing `factory_boy` factories.
@@ -223,6 +233,12 @@ User: "Run the QA agents against this PR." (use qa-orchestrator)
 User: "Write an end-to-end Playwright test for checkout." (not a unit test)
 
 ## Troubleshooting
+
+- Error: Cannot tell which package manager the project uses
+- Cause: No `packageManager` field, no lockfile, nothing in docs or CI
+- Solution: Ask the user which one to use (suggest pnpm); never fall back
+  to npm
+- Expected behavior: Every command uses the package manager the user names
 
 - Error: No fake-data library or factories in the project
 - Cause: The repo never adopted one

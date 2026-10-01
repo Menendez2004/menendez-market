@@ -9,6 +9,7 @@ for asking the user when a category is missing
 
 | Need | Detect in repo | Default to propose |
 |---|---|---|
+| Package manager | `packageManager` field, then `pnpm-lock.yaml` / `yarn.lock` / `bun.lock(b)` / `package-lock.json` (`rules/env-package-manager.md`) | Ask; suggest pnpm. Never npm by default |
 | Runner | `vitest`, `jest`, `mocha`, `node:test` in `package.json` | Vitest (Vite projects), Jest otherwise |
 | Mocking | `vi.fn`/`vi.mock`, `jest.fn`/`jest.mock`, `sinon`, `ts-mockito`, `jest-mock-extended` | The runner's built-in mocks |
 | HTTP mocking | `msw`, `nock` | MSW |
@@ -22,6 +23,7 @@ for asking the user when a category is missing
 
 | Need | Detect in repo | Default to propose |
 |---|---|---|
+| Environment / package manager | `uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock` (`rules/env-package-manager.md`) | the one detected; ask if none |
 | Runner | `pytest`, `unittest` | pytest |
 | Mocking | `unittest.mock` (`patch`, `create_autospec`), `pytest-mock` (`mocker`) | `pytest-mock` with `create_autospec` |
 | HTTP mocking | `responses`, `respx`, `requests-mock`, `pytest-httpx` | the one matching the HTTP client |
