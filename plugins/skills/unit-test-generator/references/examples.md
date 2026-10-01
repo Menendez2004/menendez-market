@@ -62,6 +62,7 @@ describe("UserService.register", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
