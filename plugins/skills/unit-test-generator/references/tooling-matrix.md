@@ -17,7 +17,7 @@ for asking the user when a category is missing
 | Factories | `fishery`, `@mswjs/data`, `rosie`, `factory.ts`, files named `*.factory.ts` | `fishery` (or plain typed builder functions on Faker) |
 | Seed | `faker.seed(n)` | once per file, or in the runner's setup file |
 | Time | `vi.useFakeTimers()` + `vi.setSystemTime(d)`, `jest.useFakeTimers()` | runner's fake timers |
-| Reset | `restoreMocks`/`clearMocks` in config, `vi.restoreAllMocks()` | `afterEach(() => vi.restoreAllMocks())` |
+| Reset | `clearMocks`/`mockReset`/`restoreMocks` in config | `afterEach(() => { vi.clearAllMocks(); vi.restoreAllMocks(); })` (Jest: `jest.clearAllMocks()` + `jest.restoreAllMocks()`); `restoreAllMocks()` alone does not clear call history |
 
 ## Python
 

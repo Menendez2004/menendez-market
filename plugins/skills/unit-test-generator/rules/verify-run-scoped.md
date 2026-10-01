@@ -14,6 +14,10 @@ the repo's own command (from `package.json` scripts, Makefile, `pyproject`,
 CI config) and the project's package manager (`env-package-manager.md`).
 Never run the full suite.
 
+**Exception — Mode C (refactor suite):** run the existing file once before
+editing it to record a baseline, then once after. This is the only case
+with two runs, and both stay scoped to that file.
+
 | Stack | Example single-file command |
 |---|---|
 | Vitest | `pnpm exec vitest run test/order-service.test.ts` (or `yarn vitest run …`, `bunx vitest run …`) |

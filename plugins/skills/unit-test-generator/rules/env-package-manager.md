@@ -56,8 +56,11 @@ Notes:
   real lockfile and can install different versions.
 - Never commit or leave behind a lockfile the project did not already have.
 - Yarn Classic (1.x) does not install peer dependencies. When adding a
-  test tool with it, also add its required peers (for example `vite` for
-  `vitest`), after the same approval.
+  test tool with it, read the tool's `peerDependencies` in its
+  `package.json` (or the install warnings) and add the required peers in
+  the same approved command. Whether a package is a peer depends on the
+  version (recent Vitest releases list `vite` as a peer), so check instead
+  of assuming.
 
 ## Other ecosystems
 

@@ -158,6 +158,11 @@ If no fake-data library or factory exists, stop and ask before adding one
 
 ## Mode C — Refactor Suite
 
+0. Before changing anything, run the existing test file once and record the
+   baseline: which tests pass and which already fail
+   (`rules/verify-run-scoped.md`). If tests may not be run (orchestrator
+   brief), record the test names and assertions instead and say in the
+   report that no baseline run was possible.
 1. Keep every behavior the suite currently asserts; refactoring must not
    lose a case.
 2. Replace hand-written data with factories, hand-rolled fakes with the
@@ -165,7 +170,9 @@ If no fake-data library or factory exists, stop and ask before adding one
 3. Do not change what is asserted unless the assertion checks implementation
    details (`rules/struct-assert-behavior.md`); list any such change in the
    report.
-4. Run the refactored file once and confirm the same tests pass as before.
+4. Run the refactored file once and compare with the baseline: every test
+   that passed must still pass, and tests that already failed are reported
+   as pre-existing failures, not as refactor regressions.
 
 ## When Spawned by an Orchestrator
 
