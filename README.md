@@ -10,11 +10,7 @@ Marketplace de plugins para Claude Code.
 
 # 2. Instalar los plugins que quieras
 /plugin install dev-orchestrator@menendez-market
-/plugin install qa-orchestrator@menendez-market
-/plugin install qa-happy-path@menendez-market
-/plugin install qa-api-adversary@menendez-market
-/plugin install qa-debugger@menendez-market
-/plugin install qa-personality-builder@menendez-market
+/plugin install qa@menendez-market
 ```
 
 (Desde la terminal también funciona: `claude plugin marketplace add Menendez2004/menendez-market`.)
@@ -24,17 +20,13 @@ Marketplace de plugins para Claude Code.
 | Plugin | Descripción |
 | --- | --- |
 | `dev-orchestrator` | Human-in-the-loop development orchestrator with a 2-level hierarchy: adopts the Lead's plan (or drafts one in plan mode under opusplan if none is given), launches one Task Agent per step in its own terminal (or inline for small steps), starting each step as soon as its dependencies finish, and each agent can use read-only research sub-agents (Sonnet 4.6) that prioritize graphify. Execution runs on the latest Sonnet. Never runs tests; runs checks once at the end. Escalates to the Lead on ambiguity or destructive actions. |
-| `qa-orchestrator` | Orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes. Usa qa-happy-path, qa-api-adversary y qa-debugger. |
-| `qa-happy-path` | Prueba los flujos principales de la UI con Playwright y reporta bugs con pasos de reproducción. |
-| `qa-api-adversary` | Intenta romper la API: auth, validación de entrada, duplicados, condiciones de carrera y requests malformados. |
-| `qa-debugger` | Recibe los bugs de QA y aplica correcciones mínimas con un reporte por bug. |
-| `qa-personality-builder` | Crea personalidades de QA propias del proyecto y las registra en `.qa/config.yml`. |
+| `qa` | Suite de QA (se instala completa). Incluye las skills: `qa-orchestrator` (orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes), `qa-happy-path` (prueba los flujos principales de la UI con Playwright), `qa-api-adversary` (intenta romper la API: auth, validación, duplicados, condiciones de carrera, requests malformados), `qa-debugger` (aplica correcciones mínimas a los bugs reportados) y `qa-personality-builder` (crea personalidades de QA propias del proyecto en `.qa/config.yml`). |
 
 ## Estructura
 
 ```
 .claude-plugin/
-  marketplace.json          # catálogo: cada plugin apunta a su skill
+  marketplace.json          # catálogo: cada plugin apunta a sus skills
 plugins/
   skills/
     dev-orchestrator/       # SKILL.md + references/, rules/
@@ -46,13 +38,15 @@ plugins/
       qa-personality-builder/ # SKILL.md + references/, rules/
 ```
 
-Cada entrada de `marketplace.json` usa `"strict": false` y declara su skill con
-`"skills": ["./plugins/skills/<nombre>"]` (o `./plugins/skills/qa/<nombre>` para las
-de QA), así cada plugin se instala por separado y solo carga su propia skill.
+Cada entrada de `marketplace.json` usa `"strict": false` y declara sus skills con
+`"skills": [...]`. `dev-orchestrator` carga solo su skill (y su agente
+`orch-researcher`); el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
+juntas, porque `qa-orchestrator` lanza a las demás.
 
-Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` (las de QA van
-en `plugins/skills/qa/<nombre>/`), agrega una
-entrada en `.claude-plugin/marketplace.json` y valida con:
+Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` y agrega una
+entrada en `.claude-plugin/marketplace.json`. Una skill de QA nueva va en
+`plugins/skills/qa/<nombre>/` y se agrega a la lista `skills` del plugin `qa`.
+Valida con:
 
 ```bash
 claude plugin validate .
