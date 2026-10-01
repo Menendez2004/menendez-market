@@ -64,6 +64,26 @@
         "personality-builder",
         "custom-agents"
       ]
+    },
+    {
+      "name": "unit-test-generator",
+      "source": "./",
+      "description": "Generate strict, isolated unit tests that follow the repo's own runner, mocking library and factories. Test data comes from Faker or existing factories (never hand-written objects), collaborators are mocked with the repo's mocking framework, data and time are seeded and deterministic, and every suite covers happy paths, branches, invalid input, boundaries, errors and side effects with the AAA pattern. Never changes production code; reports suspected bugs instead. Trigger on \"write unit tests for\", \"generate tests\", \"add test coverage\", \"refactor these tests\", or /unit-test-generator.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/unit-test-generator"
+      ],
+      "keywords": [
+        "testing",
+        "unit-tests",
+        "mocking",
+        "faker",
+        "factories"
+      ]
     }
   ]
 }
