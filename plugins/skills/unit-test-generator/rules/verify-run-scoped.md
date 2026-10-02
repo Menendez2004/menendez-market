@@ -1,5 +1,5 @@
 ---
-title: Run only the tests you wrote, once
+title: Run only the tests you wrote, scoped to their files
 impact: HIGH
 tags:
   - testing
@@ -9,14 +9,18 @@ tags:
 
 ## Rule
 
-After writing the tests, run only the new or edited test file(s), once, with
-the repo's own command (from `package.json` scripts, Makefile, `pyproject`,
-CI config) and the project's package manager (`env-package-manager.md`).
-Never run the full suite.
+After writing the tests, run only the new or edited test file(s), with
+coverage scoped to the unit (`verify-coverage-90.md`), using the repo's own
+command (from `package.json` scripts, Makefile, `pyproject`, CI config) and
+the project's package manager (`env-package-manager.md`).
+Never run the full suite. Re-run the same scoped command only to close a
+coverage gap or after fixing a broken test.
 
-**Exception — Mode C (refactor suite):** run the existing file once before
-editing it to record a baseline, then once after. This is the only case
-with two runs, and both stay scoped to that file.
+**Mode C (refactor suite):** also run the existing file once before editing
+it to record a baseline. Every run stays scoped to that file.
+
+The commands below run one file; add the coverage flags from
+`verify-coverage-90.md` to them.
 
 | Stack | Example single-file command |
 |---|---|
@@ -36,7 +40,8 @@ npm form (`npx …`, `npm test -- <file>`) only when the project uses npm.
 - If it fails because of the code, follow `verify-no-prod-changes.md`.
 - If the brief or the user says not to run tests (for example when spawned
   by dev-orchestrator), do not run them; put the command in the report.
-- Report the exact command and the pass/total count.
+- Report the exact command, the pass/total count and the coverage per
+  metric.
 
 **Why it matters:** Running the generated file proves the tests compile,
 the mocks are wired and the assertions hold. Running the full suite is slow
