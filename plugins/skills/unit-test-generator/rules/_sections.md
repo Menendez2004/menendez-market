@@ -46,6 +46,7 @@ Rules for running the generated tests and handling failures without touching
 production code.
 
 - `verify-no-prod-changes.md` (CRITICAL)
+- `verify-coverage-90.md` (CRITICAL)
 - `verify-run-scoped.md` (HIGH)
 
 ## Impact levels
