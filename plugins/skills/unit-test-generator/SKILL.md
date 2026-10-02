@@ -7,7 +7,8 @@ description: >-
   existing factories, never from hand-written dummy objects; collaborators are
   mocked with the repo's mocking framework, never with hand-rolled fakes.
   Covers happy paths, invalid input, boundaries and error paths with the AAA
-  pattern and seeded, deterministic data. Trigger on "write unit tests for",
+  pattern and seeded, deterministic data, and requires at least 90%
+  line, statement, branch and function coverage on the unit under test. Trigger on "write unit tests for",
   "generate tests", "add test coverage", "cover this with tests", "refactor
   these tests", or /unit-test-generator.
 user-invocable: true
@@ -60,7 +61,8 @@ Every generated or edited test must comply with the rules in `rules/`. See
 | Required case matrix per unit | `rules/struct-case-matrix.md` | HIGH |
 | Assert behavior, not implementation | `rules/struct-assert-behavior.md` | MEDIUM |
 | Never change production code to pass a test | `rules/verify-no-prod-changes.md` | CRITICAL |
-| Run only the tests you wrote, once | `rules/verify-run-scoped.md` | HIGH |
+| At least 90% coverage on the unit under test | `rules/verify-coverage-90.md` | CRITICAL |
+| Run only the tests you wrote, scoped to their files | `rules/verify-run-scoped.md` | HIGH |
 
 ## References
 
@@ -140,21 +142,29 @@ If no fake-data library or factory exists, stop and ask before adding one
 
 ### 5. Verify
 
-1. Run only the new or edited test file(s), once, with the repo's command
-   through its package manager (`rules/verify-run-scoped.md`).
-2. If a test fails because the production code is wrong, do not change the
+1. Run only the new or edited test file(s) with the repo's command through
+   its package manager, with coverage scoped to the unit's source file(s)
+   (`rules/verify-run-scoped.md`, `rules/verify-coverage-90.md`).
+2. If any coverage metric (lines, statements, branches, functions) is below
+   90%, add tests for the uncovered lines and branches the report lists and
+   run the same scoped command again, until every metric is at least 90%.
+   Never use coverage-ignore markers. If the rest is unreachable without
+   changing production code, stop and report it.
+3. If a test fails because the production code is wrong, do not change the
    production code and do not weaken the test: report it as a suspected bug
    (`rules/verify-no-prod-changes.md`).
-3. Self-check against the Output Checklist below, then report.
+4. Self-check against the Output Checklist below, then report.
 
 ## Mode B — Fill Gaps
 
 1. Read the existing test file and map which cases from the case matrix it
    already covers.
-2. If the repo has a coverage command, you may run it for the target file
-   only to find uncovered branches.
-3. Add only the missing cases, in the file's existing style and helpers. Do
-   not rewrite passing tests.
+2. Run the existing test file with coverage scoped to the target source
+   file (`rules/verify-coverage-90.md`) to find uncovered lines and
+   branches.
+3. Add only the missing cases, in the file's existing style and helpers,
+   until every coverage metric is at least 90%. Do not rewrite passing
+   tests.
 
 ## Mode C — Refactor Suite
 
@@ -170,15 +180,17 @@ If no fake-data library or factory exists, stop and ask before adding one
 3. Do not change what is asserted unless the assertion checks implementation
    details (`rules/struct-assert-behavior.md`); list any such change in the
    report.
-4. Run the refactored file once and compare with the baseline: every test
-   that passed must still pass, and tests that already failed are reported
-   as pre-existing failures, not as refactor regressions.
+4. Run the refactored file and compare with the baseline: every test that
+   passed must still pass, and tests that already failed are reported as
+   pre-existing failures, not as refactor regressions.
+5. The refactored suite must also reach at least 90% coverage on the unit
+   (`rules/verify-coverage-90.md`); add missing cases if it does not.
 
 ## When Spawned by an Orchestrator
 
 If the brief says not to run tests (for example a dev-orchestrator Task
-Agent), write the tests and skip step 5.1; list the command to run in your
-report instead. Work only from the brief and the files it names.
+Agent), write the tests and skip steps 5.1–5.2; list the scoped coverage
+command in your report and mark coverage as "not measured (tests not run)". Work only from the brief and the files it names.
 
 ## Constraints
 
@@ -200,6 +212,8 @@ report instead. Work only from the brief and the files it names.
 **Files:** <test files created/edited> · <factories created/edited>
 **Cases:** <n> tests — happy <n>, invalid input <n>, boundary <n>, errors <n>, side effects <n>
 **Run:** `<command>` → <passed>/<total> (or "not run: <reason>")
+**Coverage (<source file>):** statements <n>% · branches <n>% · functions <n>% · lines <n>% (min 90%) — or "not measured: <reason>"
+**Uncovered:** <none | file:line — why it cannot be reached>
 **Suspected bugs:** <none | file:line — expected vs actual, failing test name>
 **Not covered:** <cases skipped and why, or "none">
 ```
@@ -214,6 +228,8 @@ report instead. Work only from the brief and the files it names.
 - [ ] Data library seeded; time and randomness controlled.
 - [ ] Every test has a visible Arrange / Act / Assert.
 - [ ] Each case-matrix category is covered or listed under "Not covered".
+- [ ] Lines, statements, branches and functions are each at least 90% on
+      the unit under test, with no coverage-ignore markers.
 - [ ] Mocks reset between tests; no test depends on another's order.
 - [ ] No production file changed.
 
@@ -246,6 +262,15 @@ User: "Write an end-to-end Playwright test for checkout." (not a unit test)
 - Solution: Ask the user which one to use (suggest pnpm); never fall back
   to npm
 - Expected behavior: Every command uses the package manager the user names
+
+- Error: Coverage stays below 90% after covering every case
+- Cause: The remaining lines are dead code or defensive branches with no
+  seam to reach them from a unit test
+- Solution: Report coverage per metric and each uncovered `file:line` with
+  the reason, suggest the minimal production change, and ask the user; do
+  not add ignore markers or assertion-free tests
+- Expected behavior: The user decides whether to change the code or accept
+  the gap
 
 - Error: No fake-data library or factories in the project
 - Cause: The repo never adopted one

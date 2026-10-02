@@ -17,6 +17,7 @@ for asking the user when a category is missing
 | Factories | `fishery`, `@mswjs/data`, `rosie`, `factory.ts`, files named `*.factory.ts` | `fishery` (or plain typed builder functions on Faker) |
 | Seed | `faker.seed(n)` | once per file, or in the runner's setup file |
 | Time | `vi.useFakeTimers()` + `vi.setSystemTime(d)`, `jest.useFakeTimers()` | runner's fake timers |
+| Coverage | `@vitest/coverage-v8` / `@vitest/coverage-istanbul`, Jest built-in `--coverage` | the Vitest provider matching the repo (`rules/verify-coverage-90.md`) |
 | Reset | `clearMocks`/`mockReset`/`restoreMocks` in config | `afterEach(() => { vi.clearAllMocks(); vi.restoreAllMocks(); })` (Jest: `jest.clearAllMocks()` + `jest.restoreAllMocks()`); `restoreAllMocks()` alone does not clear call history |
 
 ## Python
@@ -25,6 +26,7 @@ for asking the user when a category is missing
 |---|---|---|
 | Environment / package manager | `uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock` (`rules/env-package-manager.md`) | the one detected; ask if none |
 | Runner | `pytest`, `unittest` | pytest |
+| Coverage | `pytest-cov`, `coverage` | `pytest-cov` with `--cov-branch` |
 | Mocking | `unittest.mock` (`patch`, `create_autospec`), `pytest-mock` (`mocker`) | `pytest-mock` with `create_autospec` |
 | HTTP mocking | `responses`, `respx`, `requests-mock`, `pytest-httpx` | the one matching the HTTP client |
 | Fake data | `Faker` (also the `faker` pytest fixture) | `Faker` |

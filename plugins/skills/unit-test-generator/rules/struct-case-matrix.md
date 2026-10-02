@@ -22,8 +22,10 @@ with the reason.
 | Errors | Every error the unit throws, and every collaborator failure it must handle (rejected promise, exception, timeout) |
 | Side effects | Collaborator calls that are part of the contract (saved, published, sent) with their arguments — and that they do **not** happen on failure paths |
 
-Coverage is a check, not a goal: aim to execute every branch of the unit,
-but never add a test that asserts nothing to raise the number.
+The case matrix is how you reach the required coverage: every unit must
+end with at least 90% lines, statements, branches and functions
+(`verify-coverage-90.md`). Use the coverage report to find rows you missed,
+but never add a test that asserts nothing just to raise the number.
 
 **Incorrect:** a suite for `applyDiscount(order, code)` with only
 "applies a 10% discount".
