@@ -4,8 +4,9 @@ description: >-
   Human-in-the-loop orchestrator for multi-step dev tasks. Adopts the Lead's
   plan (drafts one in plan mode under opusplan only if none is given), maps
   step dependencies, then runs the steps itself or through Task Agents in
-  their own terminals (orch-sN-name), with read-only Research Sub-agents
-  below them (max 2 levels). Never runs tests, never guesses, never touches
+  their own terminals (orch-sN-name) and their own git worktrees, with
+  read-only Research Sub-agents below them (max 2 levels). Each finished
+  step lands in the Lead's tree as a checked, uncommitted patch. Never runs tests, never guesses, never touches
   git: escalates to the Lead. Use for "orchestrate this", "use
   dev-orchestrator", "plan and delegate this task", "run this plan with task
   agents", or any multi-step dev task where the user asks how to run it.
@@ -13,7 +14,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 7
+  version: 8
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -30,18 +31,18 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
          v
 [Orchestrator Hub]  (Level 0 -- this session)
          |
-         |-> [Task Agent: step 1]  (Level 1 -- independent CLI session in its own terminal)
+         |-> [Task Agent: step 1]  (Level 1 -- independent CLI session in its own terminal and worktree)
          |        `-> [Research Sub-agent]  (Level 2 -- read-only inline agent, graphify if available)
          |
-         `-> [Task Agent: step 2]  (Level 1 -- independent CLI session in its own terminal)
+         `-> [Task Agent: step 2]  (Level 1 -- independent CLI session in its own terminal and worktree)
                   `-> [Research Sub-agent]  (Level 2 -- read-only inline agent, graphify if available)
 ```
 
 | Level | Who | Can do | Can NOT do |
 | --- | --- | --- | --- |
 | -- | **Lead Developer** (human) | Reviews the plan, makes architectural calls, has the final word. | -- |
-| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or draft one in plan mode under `opusplan` when none is given), own `.dev/orchestrator.md`, launch Task Agents. | Make architectural or destructive decisions; commit/push/merge/PR. |
-| 1 | **Task Agent** | Execute exactly one plan step; modify code for that step; spawn Research Sub-agents via the inline `Agent` tool. | Launch other Task Agents or terminals; work on other steps; commit/push/merge/PR. |
+| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or draft one in plan mode under `opusplan` when none is given), own `.dev/orchestrator.md`, create a worktree per step, launch Task Agents, integrate checked patches. | Make architectural or destructive decisions; commit/push/merge/PR. |
+| 1 | **Task Agent** | Execute exactly one plan step; modify code for that step inside its own worktree; spawn Research Sub-agents via the inline `Agent` tool. | Edit the Lead's working tree; launch other Task Agents or terminals; work on other steps; run git commands that change anything; commit/push/merge/PR. |
 | 2 | **Research Sub-agent** | Read files, run searches, read logs/docs, run `graphify`; return a short synthesis. | Write/edit anything; spawn any agent; talk to the Lead. |
 
 The hierarchy is capped at **2 levels below you**. Nothing below Level 2
@@ -56,7 +57,8 @@ Sub-agents, pinned through `CLAUDE_CODE_SUBAGENT_MODEL`). How to set each:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
 `rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
-`rules/high-parallel-disjoint-writes.md`, `rules/high-scoped-context.md`.
+`rules/high-parallel-disjoint-writes.md`, `rules/high-worktree-isolation.md`,
+`rules/high-scoped-context.md`.
 
 ## Workflow
 
@@ -149,7 +151,14 @@ ordering constraints.
   starting from its `.dev/research/` file. You may still use read-only
   Research Sub-agents for what that research does not answer (they are then
   Level 1, still read-only and still unable to spawn).
-- **Multi-agent**: launch every ready step, one Task Agent per step:
+- **Multi-agent**: launch every ready step, one Task Agent per step, each
+  in its own git worktree (`references/worktrees.md`):
+  0. Once per task, check the worktree preconditions and record
+     `Worktrees: on | off (<reason>)` in `## Environment`. Before each
+     launch, take a fresh snapshot of the Lead's working tree (it includes
+     uncommitted edits and every step integrated so far) and create a
+     detached worktree from it at `<parent>/.<project>-orch/orch-s[N]-[short-name]`.
+     No branch is created and the Lead's index is not touched.
   1. Once per task, copy `references/task-agent-rules.md` verbatim to
      `.dev/tasks/_rules.md` and create `.dev/tasks/_decisions.md` with the
      `Decisions Log` entries so far (or "none yet"). Then write the step brief to
@@ -158,21 +167,32 @@ ordering constraints.
      scoped slice of state (task goal, decisions that affect the step,
      output of the steps it needs, notes of indirect dependencies), the key
      findings of its research with which steps completed since it was
-     taken, and a pointer to `_rules.md` -- never the rules text itself,
+     taken, its worktree path and `ROOT` (all `.dev/` paths absolute), and
+     a pointer to `_rules.md` -- never the rules text itself,
      never the full scratchpad and never the chat history. If steps
      completed since the research touched this step's files, refresh the
-     research first. A relaunch adds a `## Previous attempt` section with
-     the earlier result and `git diff --stat` of its owned files. See
+     research first. A relaunch gets a fresh worktree with the earlier
+     attempt's partial work carried over, and a `## Previous attempt`
+     section with the earlier result (`references/worktrees.md` section 7). See
      `rules/high-scoped-context.md`. Template:
      `references/agent-hierarchy.md`.
   2. **terminal** steps: open a new tab/window/pane in the terminal the user
      is using, named exactly `orch-s[N]-[short-name]` (kebab-case, e.g.
-     `orch-s2-ratelimit`), and start `claude --model sonnet` on the brief.
+     `orch-s2-ratelimit`), and start `claude --model sonnet` in the step's
+     worktree on the brief, with `--add-dir <ROOT>/.dev`.
      **inline** steps: start the Task Agent with the inline `Agent` tool on
-     the same brief. See `references/terminal-launch.md`.
+     the same brief, told to work only inside its worktree. See
+     `references/terminal-launch.md`.
   3. Wait in the background for the first new result among the running
      steps (Task Agents write `.result.md.tmp` and rename it, so a result
-     file is always complete). Merge it into the scratchpad, append any Lead
+     file is always complete). If it is `Complete`, integrate it first:
+     patch from its worktree, check that the patch touches only the step's
+     owned files and passes `git apply --check`, apply it to the Lead's
+     working tree (uncommitted, unstaged), save it as
+     `.dev/tasks/step-[N]-[short-name].patch` and remove the worktree. A
+     patch that fails a check is not applied: the step becomes `Blocked`
+     (`references/worktrees.md` section 5). Then merge it into the
+     scratchpad, append any Lead
      decision to `.dev/tasks/_decisions.md` (Task Agents re-read it before
      finishing, so running steps see it too), then launch whatever became
      ready. Waiting and edge cases:
@@ -180,8 +200,12 @@ ordering constraints.
   4. `Blocked` + `needs-file`: relaunch that step once no running step owns
      the file, instead of letting two agents edit it. Any other `Blocked`,
      or `Failed`: escalate to the Lead and hold only the steps that depend
-     on it; independent steps keep running. See
-     `references/parallelization.md` section 5.
+     on it; independent steps keep running. The step's worktree is kept
+     until it is relaunched or the Lead drops it; nothing from it reaches
+     the Lead's tree. See `references/parallelization.md` section 5.
+  5. When every step is done, `git worktree prune` and remove the empty
+     `<parent>/.<project>-orch/` directory. Remove only worktrees you
+     created (`references/worktrees.md` section 8).
 
 ### 7. Final checks -- never tests
 
@@ -263,6 +287,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
 - `rules/high-parallel-disjoint-writes.md` -- parallel only for independent steps with disjoint writes.
+- `rules/high-worktree-isolation.md` -- each Task Agent works in its own worktree; only checked patches reach the Lead's tree.
 - `rules/high-scoped-context.md` -- each agent gets only the context its step needs.
 
 ## References
@@ -272,6 +297,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `references/models.md` -- model per role (opusplan, latest Sonnet, Sonnet 4.6).
 - `references/parallelization.md` -- dependency map, dependency-driven scheduling, blocked steps.
 - `references/terminal-launch.md` -- terminal detection, launch commands, background waiting, inline runner.
+- `references/worktrees.md` -- worktree preconditions, snapshot, creation, patch integration, relaunch, cleanup, resume.
 - `references/graphify.md` -- conditional graphify use by Research Sub-agents.
 - `references/execution-modes.md` -- plan intake, triage, planning, mode routing.
 - `references/context-scratchpad.md` -- scratchpad and task file formats.

@@ -40,6 +40,22 @@ escalate_to_lead({
 And halts until the Lead answers.
 ```
 
+**Local worktree housekeeping is allowed.** In multi-agent mode the
+Orchestrator may, without asking, run the local operations
+`references/worktrees.md` describes: build a snapshot commit object from a
+temporary index (`read-tree`, `add -A`, `write-tree`, `commit-tree` with
+`GIT_INDEX_FILE` pointing to a temp file), `git worktree add --detach` /
+`remove` / `prune` on worktrees it created under `<parent>/.<project>-orch/`,
+`git diff` inside those worktrees (including `add -A` to their own index),
+and `git apply` of a checked patch to the Lead's working tree. None of these
+creates or moves a branch, touches the Lead's index, `HEAD`, stash or
+remote, or creates history anyone else sees. Everything else still needs
+the Lead: `commit`, `push`, merge, rebase, branch creation, `stash`,
+`checkout`/`switch`/`reset`/`restore` in the Lead's tree, `apply --index`
+or `--3way`, and removing any worktree the Orchestrator did not create.
+Task Agents run no git command that changes anything, inside or outside
+their worktree.
+
 **Why it matters:** `git commit`, `git push`, merges, and opening a PR are the
 irreversible-in-practice, other-people-see-it boundary of this workflow --
 once pushed, the change is live for every collaborator and hard to silently

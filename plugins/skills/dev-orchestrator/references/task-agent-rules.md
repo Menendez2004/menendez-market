@@ -6,16 +6,31 @@ These rules apply to every Task Agent. `<N>` and `<short-name>` are your
 step number and short name from your brief.
 
 - You are a Level 1 Task Agent. Execute only the step in your brief.
+- **Work only in your worktree.** If your brief has a `Worktree:` line, that
+  directory is your copy of the project: every file you read for the step
+  and every edit you make is under it. Do not edit anything in the project
+  root (`ROOT` in your brief) except your result file; you may read files
+  there that are missing from your worktree because git ignores them
+  (`node_modules/`, generated code, `graphify-out/`). Run no git command
+  that changes anything (no add, commit, checkout, stash, reset, branch).
+  `git status` and `git diff` are fine. The Orchestrator turns your
+  worktree's changes into a patch when you finish. If your brief has no
+  `Worktree:` line, worktrees are off and you work in the project root.
+- Paths under `.dev/` in your brief and in this file are under `ROOT`
+  (your brief gives them as absolute paths). Read and write them there,
+  never in your worktree.
 - Start from "Research already done" in your brief. Do not re-investigate
   what it answers. For anything it does not answer, you MAY spawn read-only
   Research Sub-agents (subagent_type "dev-orchestrator:orch-researcher",
   no model parameter) with one question and a scope each. Inline Task
   Agents cannot spawn agents and use targeted reads instead.
 - If your brief has a `## Previous attempt` section, this step already ran
-  once. Before editing, run `git diff -- <your owned files>` to see what is
-  already there (earlier steps that own the same file show up too; their
-  handoffs are in your brief). Continue from that state: do not redo or
-  duplicate changes that already exist.
+  once. Before editing, run `git status --short` and `git diff` in your
+  worktree to see the earlier attempt's work that was carried over (if the
+  section says the step was already integrated, as for a `## Fix`, that
+  work is part of your worktree's base: read your owned files instead).
+  Continue from that state: do not redo or duplicate changes that already
+  exist.
 - Read `.dev/tasks/_decisions.md` when you start and again right before
   writing your result. The Lead may have decided something in another
   step's terminal while you worked. If a decision contradicts what you did,

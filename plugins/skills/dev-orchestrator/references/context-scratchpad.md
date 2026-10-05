@@ -13,7 +13,10 @@ conversation memory.
 - `.dev/orchestrator.md`, relative to the project root. Create the `.dev/`
   directory if it does not exist. This file is plain markdown so the Lead can
   open and read it directly at any time without tooling.
-- Task Agent briefs and results live in `.dev/tasks/` (create it if needed).
+- Task Agent briefs and results live in `.dev/tasks/` (create it if needed),
+  together with each step's integrated patch.
+- Task Agent worktrees live outside the project in
+  `<parent>/.<project>-orch/` (`references/worktrees.md`), never in `.dev/`.
 - Footprint research syntheses live in `.dev/research/`, one file per step,
   written by the Orchestrator from its Research Sub-agents' replies. Each
   file starts with `Taken after: <steps Complete at that time, or "no step
@@ -41,6 +44,7 @@ conversation memory.
       _decisions.md                   # Lead decisions, append-only (Orchestrator writes, Task Agents read)
       step-1-<short-name>.md          # brief (Orchestrator writes)
       step-1-<short-name>.result.md   # result (Task Agent writes)
+      step-1-<short-name>.patch       # what the step changed, applied to the Lead's tree (Orchestrator writes)
       step-2-<short-name>.md
       ...
     research/
@@ -89,6 +93,7 @@ shown to the Lead (references/parallelization.md).>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
 - graphify: <available (existing graph / skill / CLI) | not available>
 - Models: <planning / execution / research models actually used>
+- Worktrees: <on, ROOT=<path>, WTROOT=<path> | off (<reason>)>
 
 ## Decisions Log
 
@@ -104,6 +109,8 @@ shown to the Lead (references/parallelization.md).>
 - Brief: .dev/tasks/step-<N>-<short-name>.md
 - Research: .dev/research/step-<N>-<short-name>.md
 - Owned files: <paths>
+- Worktree: <path> (base <snapshot sha>) | removed | none (worktrees off)
+- Integrated: <.dev/tasks/step-<N>-<short-name>.patch | not yet | rejected: <ownership | apply check>: <paths>>
 - Status: <Running | Complete | Blocked | Failed>
 - Result: <files touched, research used (graphify yes/no), notes>
 
@@ -174,9 +181,14 @@ Orchestrator reads the whole scratchpad.
    - Brief but no result, runner `inline` -> the agent died with the old
      session.
    - No brief -> not started; the launch rule decides.
-3. A step that died mid-way may have left partial edits in its owned files.
-   Show the Lead `git diff --stat` for those files and ask whether to
-   relaunch it on top of them or have the Lead discard them first. Never
-   discard them yourself (`rules/critical-no-autonomous-git.md`).
+3. A step that died mid-way left its partial edits in its worktree, not in
+   the Lead's tree: follow `references/worktrees.md` section 9 (relaunch on
+   top of them or drop the worktree, as the Lead chooses). A `Complete`
+   result whose handoff has no `Integrated:` patch yet is integrated now
+   (`references/worktrees.md` section 5). With worktrees off, the partial
+   edits are in the owned files: show the Lead `git diff --stat` for them
+   and ask whether to relaunch on top of them or have the Lead discard them
+   first. Never discard anything yourself
+   (`rules/critical-no-autonomous-git.md`).
 4. Recompute `## State` (above), log the resume in the `Decisions Log`, and continue
    with the launch rule (`references/parallelization.md` section 3).

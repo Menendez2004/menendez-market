@@ -159,9 +159,15 @@ Record the map, the preview and the cap in the scratchpad's
   can also answer in that step's terminal. When that step's result arrives,
   check it against the decision before launching its dependents.
 - **Every relaunch carries a `## Previous attempt` section** (template in
-  `references/agent-hierarchy.md`): the previous result and
-  `git diff --stat -- <owned files>` (read-only). A fresh session never
-  starts a step blind to its own earlier edits.
+  `references/agent-hierarchy.md`) and starts in a fresh worktree with the
+  earlier attempt's partial work carried over
+  (`references/worktrees.md` section 7). A fresh session never starts a
+  step blind to its own earlier edits.
+- **Integrate before you schedule.** A `Complete` result is first
+  integrated into the Lead's tree (`references/worktrees.md` section 5);
+  only then do its dependents count as ready, so their snapshots contain
+  its changes. A patch rejected by the ownership or apply check makes the
+  step `Blocked`, not `Complete`.
 - **`Blocked` with `needs-file: <path>`**: the step does not edit that file.
   Wait until no running step owns the path, add it to the step's owned
   files, log it in the scratchpad, and relaunch the step with a

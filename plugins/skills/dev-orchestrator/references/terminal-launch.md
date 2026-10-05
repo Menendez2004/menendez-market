@@ -51,13 +51,25 @@ reuse it for every step. If detection is ambiguous, ask the Lead once
 
 ## 3. Launch command per terminal
 
-Shared variables (run from the project root):
+Shared variables (run from the project root, after creating the step's
+worktree, `references/worktrees.md` section 4):
 
 ```bash
+ROOT="$(git rev-parse --show-toplevel)"
 NAME="orch-s2-ratelimit"
-BRIEF=".dev/tasks/step-2-ratelimit.md"
-CMD="claude --model sonnet 'Read $BRIEF and execute it exactly as written.'"
+DIR="$WTROOT/$NAME"                      # the step's worktree; "$ROOT" if worktrees are off
+BRIEF="$ROOT/.dev/tasks/step-2-ratelimit.md"
+CMD="claude 'Read $BRIEF and execute it exactly as written.' --model sonnet --add-dir '$ROOT/.dev'"
 ```
+
+The Task Agent starts **in its worktree** (`DIR`), so its edits and its
+Research Sub-agents' searches stay there. `--add-dir` lets it read the
+brief, rules and decisions and write its result under `ROOT/.dev` without
+giving it the rest of the Lead's tree. If the step must read ignored files
+from `ROOT` (for example `graphify-out/`), add that directory with another
+`--add-dir`. Keep the prompt **before** `--add-dir`: the option takes
+several paths and would swallow a prompt placed after it. With worktrees
+off, `DIR="$ROOT"` and `--add-dir` is not needed.
 
 `--model sonnet` runs the Task Agent on the latest Sonnet. Its Research
 Sub-agents get Sonnet 4.6 from their own agent definition
@@ -65,22 +77,22 @@ Sub-agents get Sonnet 4.6 from their own agent definition
 
 | Terminal | Command |
 | --- | --- |
-| tmux | `tmux new-window -n "$NAME" -c "$PWD" "$CMD"` |
-| Zellij | `zellij action new-tab --name "$NAME" --cwd "$PWD"` then `zellij action write-chars "$CMD"` + Enter (or `zellij run --name "$NAME" --cwd "$PWD" -- sh -c "$CMD"` for a pane) |
-| kitty | `kitty @ launch --type=tab --tab-title "$NAME" --cwd "$PWD" sh -c "$CMD"` (needs `allow_remote_control yes`) |
-| WezTerm | `PANE=$(wezterm cli spawn --cwd "$PWD" -- sh -c "$CMD") && wezterm cli set-tab-title --pane-id "$PANE" "$NAME"` |
+| tmux | `tmux new-window -n "$NAME" -c "$DIR" "$CMD"` |
+| Zellij | `zellij action new-tab --name "$NAME" --cwd "$DIR"` then `zellij action write-chars "$CMD"` + Enter (or `zellij run --name "$NAME" --cwd "$DIR" -- sh -c "$CMD"` for a pane) |
+| kitty | `kitty @ launch --type=tab --tab-title "$NAME" --cwd "$DIR" sh -c "$CMD"` (needs `allow_remote_control yes`) |
+| WezTerm | `PANE=$(wezterm cli spawn --cwd "$DIR" -- sh -c "$CMD") && wezterm cli set-tab-title --pane-id "$PANE" "$NAME"` |
 | iTerm2 | AppleScript snippet below |
 | macOS Terminal | AppleScript snippet below |
-| Windows Terminal | `wt -w 0 new-tab --title "$NAME" -d . <shell> -c "$CMD"` (e.g. `pwsh -NoExit -Command`) |
-| Konsole | `konsole --new-tab --workdir "$PWD" -p tabtitle="$NAME" -e sh -c "$CMD"` |
-| GNOME Terminal | `gnome-terminal --tab --title="$NAME" --working-directory="$PWD" -- sh -c "$CMD; exec \$SHELL"` |
-| Alacritty | `alacritty msg create-window --working-directory "$PWD" --title "$NAME" -e sh -c "$CMD"` (falls back to `alacritty --title ... -e ...`) |
+| Windows Terminal | `wt -w 0 new-tab --title "$NAME" -d "$DIR" <shell> -c "$CMD"` (e.g. `pwsh -NoExit -Command`) |
+| Konsole | `konsole --new-tab --workdir "$DIR" -p tabtitle="$NAME" -e sh -c "$CMD"` |
+| GNOME Terminal | `gnome-terminal --tab --title="$NAME" --working-directory="$DIR" -- sh -c "$CMD; exec \$SHELL"` |
+| Alacritty | `alacritty msg create-window --working-directory "$DIR" --title "$NAME" -e sh -c "$CMD"` (falls back to `alacritty --title ... -e ...`) |
 | VS Code / Cursor, Ghostty, unknown | See fallback below. |
 
 macOS (iTerm2 / Terminal) via AppleScript:
 
 ```bash
-LINE="cd '$PWD'; printf '\\033]0;%s\\007' '$NAME'; $CMD"
+LINE="cd '$DIR'; printf '\\033]0;%s\\007' '$NAME'; $CMD"
 
 # iTerm2
 osascript <<OSA
@@ -114,9 +126,9 @@ a shell. In that case:
 
 1. If `tmux` is installed, start a detached session and tell the Lead how to
    attach:
-   `tmux new-session -d -s "$NAME" -c "$PWD" "$CMD"` ->
+   `tmux new-session -d -s "$NAME" -c "$DIR" "$CMD"` ->
    "Run `tmux attach -t $NAME` in a new terminal to watch step N."
-2. Otherwise, print the exact command (`cd <project> && <CMD>`) and ask the
+2. Otherwise, print the exact command (`cd <DIR> && <CMD>`) and ask the
    Lead to open a new terminal named `$NAME` and paste it. Wait for the
    result file as usual.
 
@@ -168,10 +180,13 @@ Opening a terminal and starting a full CLI session has a fixed cost that
 dominates a small step. A step the dependency map marks **inline**
 (`references/parallelization.md` section 1) skips the terminal:
 
-- The Orchestrator writes the same brief file and starts the Task Agent
-  with the inline `Agent` tool (a general-purpose type that can edit),
-  `model: "sonnet"`, `run_in_background: true`, and a prompt of
-  "Read <brief path> and execute it exactly as written. Reply only with
+- The Orchestrator creates the step's worktree like for any other step
+  (`references/worktrees.md` section 4), writes the same brief file and
+  starts the Task Agent with the inline `Agent` tool (a general-purpose
+  type that can edit), `model: "sonnet"`, `run_in_background: true`, no
+  `isolation` parameter (the Orchestrator's own worktree replaces it), and
+  a prompt of "Read <absolute brief path> and execute it exactly as
+  written. Work only inside <worktree path>. Reply only with
   `done: <result path>`." Its reply lands in the Orchestrator's own
   context, so it must stay one line; everything else goes in the result
   file, which the Orchestrator reads like any other.
