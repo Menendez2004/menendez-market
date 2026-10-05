@@ -45,6 +45,12 @@ waiting for step 4.
   else is `Blocked` with `needs-file`, never a silent edit.
 - Scheduling never changes the plan's content; the Lead approves the map.
 
-**Why it matters:** Parallel Task Agents share one working tree. Without a
-dependency map, the fastest schedule is also the one most likely to produce
-overwritten edits and steps built on code that does not exist yet.
+**Why it matters:** Each Task Agent works in its own worktree
+(`high-worktree-isolation.md`), but every finished step is applied as a
+patch to the same Lead working tree. Two steps that write the same file
+produce patches that conflict, and a step that starts before its `Needs`
+are integrated builds on code that does not exist in its snapshot. Without
+a dependency map, the fastest schedule is also the one most likely to
+produce rejected patches and steps built on missing code. With worktrees
+off, Task Agents share one working tree and this rule is the only
+protection against overwritten edits.
