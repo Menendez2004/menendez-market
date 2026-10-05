@@ -11,7 +11,7 @@
     {
       "name": "dev-orchestrator",
       "source": "./",
-      "description": "Human-in-the-loop orchestrator for multi-step dev tasks with a two-level agent hierarchy. Adopts the Lead's plan (drafts one in plan mode under opusplan only if none is given), maps step dependencies and asks whether to run as a single session or multi-agent. In multi-agent mode each step gets a Task Agent on the latest Sonnet, in its own terminal (orch-sN-name) or inline for small steps, and starts as soon as its dependencies finish. Task Agents reuse the orchestrator's research and may spawn read-only Research Sub-agents (Sonnet 4.6) that use graphify first. Never runs tests: checks run once at the end. Never guesses on ambiguity, architecture, or destructive/git actions: escalates to the Lead. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\".",
+      "description": "Human-in-the-loop orchestrator for multi-step dev tasks with a two-level agent hierarchy. Adopts the Lead's plan (drafts one in plan mode under opusplan only if none is given), maps step dependencies and asks whether to run as a single session or multi-agent. In multi-agent mode each step gets a Task Agent on the latest Sonnet, in its own terminal (orch-sN-name) or inline for small steps and in its own git worktree (each finished step is applied to the Lead's tree as a checked, uncommitted patch), and starts as soon as its dependencies finish. Task Agents reuse the orchestrator's research and may spawn read-only Research Sub-agents (Sonnet 4.6) that use graphify first. Never runs tests: checks run once at the end. Never guesses on ambiguity, architecture, or destructive/git actions: escalates to the Lead. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\".",
       "version": "1.0.0",
       "author": {
         "name": "Menendez2004"
@@ -29,7 +29,8 @@
         "planning",
         "workflow",
         "multi-agent",
-        "graphify"
+        "graphify",
+        "worktrees"
       ]
     },
     {

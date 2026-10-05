@@ -35,7 +35,9 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Asks the mandatory single-session vs. multi-agent question.
 - Sole writer of `.dev/orchestrator.md`.
 - Launches one Task Agent per plan step in the user's terminal
-  (`references/terminal-launch.md`), then merges each result.
+  (`references/terminal-launch.md`), each in its own worktree
+  (`references/worktrees.md`), then integrates each `Complete` step's patch
+  into the Lead's working tree and merges its result.
 - Never implements a step itself in multi-agent mode.
 - Runs the final checks once, after every step is complete, and never runs
   tests (`rules/high-checks-not-tests.md`).
@@ -100,6 +102,8 @@ launching the Task Agent:
 # Task Agent brief -- step <N>: <short step title>
 
 Terminal / session name: orch-s<N>-<short-name>
+Worktree: <absolute path of this step's worktree, e.g. /home/me/.app-orch/orch-s<N>-<short-name>; omit the line if worktrees are off>
+ROOT: <absolute path of the project root; .dev/ paths below are under it>
 
 ## Your step (do only this)
 
@@ -141,8 +145,13 @@ yes/no. Then: "Full synthesis: .dev/research/step-<N>-<short-name>.md", or
 
 <Only when this step ran before (needs-file, Fix, relaunch after an inline
 escalation, resume after a crash): the previous result file's Status, Files
-touched and Notes, the escalation answer if any, and the output of
-`git diff --stat -- <owned files>`. Omit the section on a first launch.>
+touched and Notes, the escalation answer if any, and where the earlier work
+is: "carried over into your worktree" with `git apply --stat` of the partial
+patch, "already integrated (part of your worktree's base)" for a `## Fix`,
+or "not carried over" with the partial patch's `--stat` when it no longer
+applied (`references/worktrees.md` section 7). With worktrees off: the
+output of `git diff --stat -- <owned files>`. Omit the section on a first
+launch.>
 
 ## Rules
 
