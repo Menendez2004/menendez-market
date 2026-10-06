@@ -22,6 +22,7 @@ level may touch.
 
 - `critical-max-two-levels.md`
 - `critical-research-read-only.md`
+- `critical-own-terminal.md`
 - `high-parallel-disjoint-writes.md`
 - `high-worktree-isolation.md`
 - `high-scoped-context.md`

@@ -4,6 +4,10 @@ In multi-agent mode every Task Agent runs as an independent CLI session in a
 **new terminal tab/window/pane of the terminal the user is actually using**,
 so the Lead can watch and interact with each step where they already work.
 
+**Mandatory:** every Task Agent gets a **new** terminal. Never start one in
+the Orchestrator's own terminal, and never kill, close or replace the
+Orchestrator's terminal (section 7, `rules/critical-own-terminal.md`).
+
 ## 1. Naming (mandatory)
 
 ```
@@ -46,7 +50,10 @@ env | grep -E '^(TMUX|ZELLIJ|KITTY_WINDOW_ID|WEZTERM_PANE|TERM_PROGRAM|WT_SESSIO
 ```
 
 Record the detected terminal in the scratchpad (`## Environment`) once, and
-reuse it for every step. If detection is ambiguous, ask the Lead once
+reuse it for every step. Record the Orchestrator's own terminal too
+(`Orchestrator terminal:`, e.g. `$TMUX_PANE` plus `tmux display -p
+'#S:#I'`, `$WEZTERM_PANE`, `$KITTY_WINDOW_ID`), so no command ever targets
+it (section 7). If detection is ambiguous, ask the Lead once
 (plain question, not an escalation) which terminal to use.
 
 ## 3. Launch command per terminal
@@ -118,6 +125,9 @@ Notes:
   needs; never inline chat history into the command.
 - If a command fails (remote control disabled, binary missing), try the
   fallback instead of switching to a different terminal app.
+- Every command above opens a new tab, window or pane. For Zellij, send
+  `write-chars` only after `new-tab` has moved the focus to the new tab;
+  otherwise the command lands in the Orchestrator's pane.
 
 ## 4. Fallback (no scriptable way to open a tab)
 
@@ -133,7 +143,8 @@ a shell. In that case:
    result file as usual.
 
 Never fall back to running the step inline in the Orchestrator's own session
-without the Lead agreeing to switch to single-session mode.
+without the Lead agreeing to switch to single-session mode, and never fall
+back to the Orchestrator's own terminal.
 
 ## 5. Waiting for results
 
@@ -203,3 +214,22 @@ dominates a small step. A step the dependency map marks **inline**
 
 If an inline step turns out bigger than expected (it needs research or
 several escalations), relaunch it in a terminal instead.
+
+## 7. Never kill the Orchestrator's terminal
+
+The Orchestrator's terminal holds its session: the conversation with the
+Lead, the background waits and the state not yet written to the
+scratchpad. Losing it orphans every running step.
+
+- Never run a Task Agent in it: no `send-keys`/`write-chars` into the
+  current pane, no `exec claude ...`, no `tmux respawn-pane`, no `claude`
+  in the Orchestrator's own shell.
+- Never kill, close or replace it, or anything that contains it: no
+  `tmux kill-pane`/`kill-window`/`kill-session`/`kill-server`, `zellij
+  action close-pane`/`close-tab`, `wezterm cli kill-pane`, `kitty @
+  close-window`/`close-tab`, `exit`, or killing its shell's process. This
+  holds for cleanup, retries and relaunches.
+- Task Agents' terminals stay open when they finish; the Lead reads and
+  closes them. A relaunch opens a new terminal instead of reusing one.
+- If you cannot open a new terminal, use the fallback in section 4. If that
+  fails too, ask the Lead; never use your own terminal.

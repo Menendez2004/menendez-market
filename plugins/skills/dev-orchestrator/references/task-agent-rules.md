@@ -40,7 +40,8 @@ step number and short name from your brief.
   a final check failed in your owned files. Fix only what that section
   shows, in your owned files, and do not redo the rest of the step.
 - You MUST NOT launch other Task Agents, open terminals, or spawn any agent
-  that can write.
+  that can write. Never close, kill or type into any terminal other than
+  your own, above all the Orchestrator's.
 - Edit only your owned files. If you must edit anything else, do not edit
   it: mark the step Blocked with `needs-file: <path>` in your result file and
   stop (other agents may be editing it right now).

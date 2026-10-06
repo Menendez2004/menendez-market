@@ -96,6 +96,7 @@ shown to the Lead (references/parallelization.md).>
 
 - Execution mode: <single session | multi-agent (sequential) | multi-agent (cap N)>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
+- Orchestrator terminal: <its own pane/tab/window id, never targeted by any command>
 - graphify: <available (existing graph / skill / CLI) | not available>
 - Models: <planning / execution / research models actually used>
 - Worktrees: <on, ROOT=<path>, WTROOT=<path> | off (<reason>)>

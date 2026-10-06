@@ -14,7 +14,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 9
+  version: 10
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -56,7 +56,7 @@ Sub-agents, pinned through `CLAUDE_CODE_SUBAGENT_MODEL`). How to set each:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
-`rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
+`rules/critical-own-terminal.md`, `rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
 `rules/high-parallel-disjoint-writes.md`, `rules/high-worktree-isolation.md`,
 `rules/high-scoped-context.md`.
 
@@ -186,10 +186,13 @@ ordering constraints.
      section with the earlier result (`references/worktrees.md` section 7). See
      `rules/high-scoped-context.md`. Template:
      `references/agent-hierarchy.md`.
-  2. **terminal** steps: open a new tab/window/pane in the terminal the user
-     is using, named exactly `orch-s[N]-[short-name]` (kebab-case, e.g.
-     `orch-s2-ratelimit`), and start `claude --model sonnet` in the step's
-     worktree on the brief, with `--add-dir <ROOT>/.dev`.
+  2. **terminal** steps: you MUST open a **new** tab/window/pane in the
+     terminal the user is using, named exactly `orch-s[N]-[short-name]`
+     (kebab-case, e.g. `orch-s2-ratelimit`), and start `claude --model
+     sonnet` in the step's worktree on the brief, with `--add-dir
+     <ROOT>/.dev`. Never start a Task Agent in your own terminal, and never
+     kill, close or replace the terminal you are running in
+     (`rules/critical-own-terminal.md`).
      **inline** steps: start the Task Agent with the inline `Agent` tool on
      the same brief, told to work only inside its worktree. See
      `references/terminal-launch.md`.
@@ -294,6 +297,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-research-read-only.md` -- Research Sub-agents never write or spawn.
 - `rules/critical-ask-the-lead.md` -- no guessing on ambiguity or architecture.
 - `rules/critical-no-autonomous-git.md` -- no autonomous git/PR actions.
+- `rules/critical-own-terminal.md` -- every Task Agent gets a new terminal; never kill the Orchestrator's terminal.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
 - `rules/high-parallel-disjoint-writes.md` -- parallel only for independent steps with disjoint writes.
