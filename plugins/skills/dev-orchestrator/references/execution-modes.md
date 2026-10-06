@@ -42,7 +42,9 @@ Classify the task as **simple** if ALL hold:
 
 Otherwise it is **complex**. When in doubt, classify as complex.
 
-A simple task becomes a one-step plan (`Source: Orchestrator, simple task`).
+A simple task becomes a one-step plan (`Source: Orchestrator, simple task`),
+saved to `.dev/plans/` like any plan the Orchestrator creates (see "Saving
+the plan" below).
 
 ## 3. Planning (complex task AND no plan provided)
 
@@ -64,6 +66,45 @@ An Orchestrator-proposed plan is a draft until the Lead approves it. Record
 
 Each plan step should be describable in one or two sentences, because that is
 what one Task Agent receives.
+
+### Saving the plan
+
+Every plan the Orchestrator creates (an `opusplan` draft or a one-step plan
+for a simple task) is saved as its own file:
+
+- Path: `.dev/plans/<YYYY-MM-DD>-<short-name>.md`, relative to the project
+  root (kebab-case short name, e.g. `2026-10-06-rate-limit.md`). Create
+  `.dev/plans/` if it does not exist. If the name is taken by another task,
+  add a suffix (`-2`).
+- When: right after leaving plan mode, before any other step. Plan mode is
+  read-only, so the draft is written as soon as it exits; with Claude Code's
+  plan approval, that is when the Lead approves it.
+- Changes: if the Lead asks for changes, edit the same file and its
+  `Status`/`Updated` lines; never create a second file for the same task.
+- Lead-provided plans are not saved here: they already live where the Lead
+  put them, and are recorded verbatim in the scratchpad.
+
+```markdown
+# Plan: <short task title>
+
+- Source: <Orchestrator-proposed (opusplan) | Orchestrator, simple task>
+- Status: <draft | approved by Lead on <YYYY-MM-DD> | superseded>
+- Created: <YYYY-MM-DD HH:MM>
+- Updated: <YYYY-MM-DD HH:MM>
+- Scratchpad: .dev/orchestrator.md
+
+## Task
+
+<The Lead's task, verbatim.>
+
+## Steps
+
+1. <step, one or two sentences>
+2. ...
+```
+
+The scratchpad's `## Plan` section holds the same numbered steps plus a
+`File: .dev/plans/<file>` line, so a resumed session can find it.
 
 ## 4. Execution-mode routing
 

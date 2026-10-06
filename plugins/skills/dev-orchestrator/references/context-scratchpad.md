@@ -17,6 +17,8 @@ conversation memory.
   together with each step's integrated patch.
 - Task Agent worktrees live outside the project in
   `<parent>/.<project>-orch/` (`references/worktrees.md`), never in `.dev/`.
+- Plans the Orchestrator creates are saved in `.dev/plans/`, one file per
+  plan (`references/execution-modes.md` -> "Saving the plan").
 - Footprint research syntheses live in `.dev/research/`, one file per step,
   written by the Orchestrator from its Research Sub-agents' replies. Each
   file starts with `Taken after: <steps Complete at that time, or "no step
@@ -39,6 +41,8 @@ conversation memory.
 <project root>/
   .dev/
     orchestrator.md
+    plans/
+      <YYYY-MM-DD>-<short-name>.md    # plans the Orchestrator creates (Orchestrator writes)
     tasks/
       _rules.md                       # Task Agent rules, copied once per task
       _decisions.md                   # Lead decisions, append-only (Orchestrator writes, Task Agents read)
@@ -77,6 +81,7 @@ after every result from the files in .dev/tasks/, never edited from memory
 ## Plan
 
 Source: <Lead-provided | Orchestrator-proposed (opusplan), approved by Lead on <date> | Orchestrator, simple task>
+File: <.dev/plans/<YYYY-MM-DD>-<short-name>.md, for plans the Orchestrator created | none (Lead-provided)>
 
 <The plan as a numbered list. If Lead-provided, copied verbatim -- never
 reworded.>
