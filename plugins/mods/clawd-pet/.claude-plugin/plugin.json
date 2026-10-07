@@ -1,0 +1,15 @@
+{
+  "name": "clawd-pet",
+  "version": "1.0.0",
+  "description": "Clawd, the Claude pet, lives above your prompt with its laptop: it types while Claude works and falls asleep (Zzz) when you are idle.",
+  "author": { "name": "Menendez2004" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "idleSeconds": {
+      "type": "number",
+      "title": "Seconds before the pet falls asleep",
+      "description": "How long with no typing and no running turn before Clawd goes to sleep.",
+      "default": 60
+    }
+  }
+}
