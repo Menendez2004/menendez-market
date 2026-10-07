@@ -16,15 +16,16 @@ const start = async ($: any, on: any) => {
 const texts = async (ui: { find: (q: { type: 'Text'; text: RegExp }) => Promise<unknown> }, text: RegExp) =>
   ui.find({ type: 'Text', text })
 
-test('Clawd is awake with its laptop, then sleeps with Zzz when idle', async ($, on) => {
+test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when idle', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface, ...CORNER } as never)
     expect(await texts(ui as never, /hi!/)).toBeDefined()
-    expect(await texts(ui as never, /▀▀▀▀/)).toBeDefined()
     expect(await texts(ui as never, / █▀█▀█▀█ /)).toBeDefined()
+    expect(await texts(ui as never, /▐/)).toBeDefined()
+    expect(await texts(ui as never, /▀▀▀▀/)).toBeUndefined()
     await ui.unmount()
   }
 
@@ -51,15 +52,39 @@ test('typing in the prompt wakes Clawd up', async ($, on) => {
   await ui.unmount()
 })
 
-test('Clawd types on its laptop while Claude is working', async ($, on) => {
+test('when work starts Clawd pulls the laptop out from behind its back and types', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
   await ($.turn as any).start({ text: 'hello' })
-  await clock.advance(1_000)
 
-  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
-  expect(await texts(ui as never, /tap/)).toBeDefined()
-  await ui.unmount()
+  const look = async (pattern: RegExp) => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, pattern)
+    await ui.unmount()
+    return found
+  }
+
+  await clock.advance(500)
+  expect(await look(/hmm…/)).toBeDefined()
+  expect(await look(/█/)).toBeDefined()
+
+  await clock.advance(500)
+  expect(await look(/got it!/)).toBeDefined()
+  expect(await look(/▄▄▄▄/)).toBeDefined()
+
+  await clock.advance(1_000)
+  expect(await look(/tap/)).toBeDefined()
+  expect(await look(/▀▀▀▀/)).toBeDefined()
+  expect(await look(/>/)).toBeDefined()
+
+  await ($.turn as any).complete({}).catch(() => undefined)
+  await clock.advance(500)
+  expect(await look(/done!/)).toBeDefined()
+
+  await clock.advance(2_000)
+  expect(await look(/hi!/)).toBeDefined()
+  expect(await look(/▀▀▀▀/)).toBeUndefined()
+  expect(await look(/▄▄▄▄/)).toBeUndefined()
 })
 
 test('keeps the mode labels the footer already shows', async ($, on) => {
