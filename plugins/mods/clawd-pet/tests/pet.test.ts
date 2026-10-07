@@ -41,6 +41,25 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
   }
 })
 
+test('asleep, Clawd breathes and Zs float up out of its head', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await clock.advance(61_000)
+
+  const frames: string[] = []
+  for (let i = 0; i < 12; i++) {
+    await clock.advance(250)
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const head = (await ui.find({ type: 'Text', text: /▄▄▄|███/ } as never)) as { text?: string } | undefined
+    const zs = (await ui.find({ type: 'Text', text: /^[·zZ]$/ } as never)) as unknown
+    frames.push(`${head?.text?.includes('▄▄▄') ? 'out' : 'in'}:${zs ? 'z' : '-'}`)
+    await ui.unmount()
+  }
+  expect(frames.some(f => f.startsWith('out'))).toBe(true)
+  expect(frames.some(f => f.startsWith('in'))).toBe(true)
+  expect(frames.every(f => f.endsWith('z'))).toBe(true)
+})
+
 test('typing in the prompt wakes Clawd up', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
@@ -76,19 +95,16 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/▄▄▄▄/)).toBeDefined()
 
   await clock.advance(1_000)
-  expect(await look(/tap/)).toBeDefined()
   expect(await look(/▀▀▀▀/)).toBeDefined()
   expect(await look(/>/)).toBeDefined()
   expect(await look(/✻/)).toBeDefined()
 
-  // Fast typing: the bubble alternates and the sparks keep moving.
-  const seen = new Set<string>()
+  // Typing shows no words, only the keys, the cursor and the sparks.
   for (let i = 0; i < 4; i++) {
     await clock.advance(250)
-    if (await look(/tap tap!/)) seen.add('tap tap!')
-    else if (await look(/tap!/)) seen.add('tap!')
+    expect(await look(/tap/)).toBeUndefined()
+    expect(await look(/✻/)).toBeDefined()
   }
-  expect([...seen].sort()).toEqual(['tap tap!', 'tap!'])
 
   await ($.turn as any).complete({}).catch(() => undefined)
   await clock.advance(500)
