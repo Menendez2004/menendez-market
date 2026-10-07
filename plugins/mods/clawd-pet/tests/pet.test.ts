@@ -28,7 +28,7 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
     expect(await texts(ui as never, /hi!/)).toBeDefined()
     expect(await texts(ui as never, /█▀█▀█▀█/)).toBeDefined()
     expect(await texts(ui as never, /▐/)).toBeDefined()
-    expect(await texts(ui as never, /^▀▀▀▀$/)).toBeUndefined()
+    expect(await texts(ui as never, /╲/)).toBeUndefined()
     await ui.unmount()
   }
 
@@ -78,7 +78,7 @@ test('typing in the prompt wakes Clawd up', async ($, on) => {
   await ui.unmount()
 })
 
-test('when work starts Clawd pulls the laptop out from behind its back and types', async ($, on) => {
+test('when work starts Clawd turns sideways, pulls out the laptop and types', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
   await ($.turn as any).start({ text: 'hello' })
@@ -90,25 +90,40 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
     return found
   }
 
+  // Facing you, the body has a full row of eyes and arms; in profile the
+  // eyes sit toward the front and the back arm is gone.
+  const facing = /^███$/
+  const sideways = /^██ $/
+
   await clock.advance(500)
   expect(await look(/hmm…/)).toBeDefined()
-  expect(await look(/█/)).toBeDefined()
+  expect(await look(sideways)).toBeDefined()
+  expect(await look(facing)).toBeUndefined()
 
   await clock.advance(500)
   expect(await look(/got it!/)).toBeDefined()
-  expect(await look(/^▀▀▀▀$/)).toBeDefined()
+  expect(await look(/^▄▄▄$/)).toBeDefined()
 
-  await clock.advance(1_000)
-  expect(await look(/^▀▀▀▀$/)).toBeDefined()
-  expect(await look(/>/)).toBeDefined()
+  await clock.advance(500)
+  expect(await look(/^▀▀▀$/)).toBeDefined()
+
+  await clock.advance(500)
+  expect(await look(/╲/)).toBeDefined()
+  expect(await look(/^▀▀▀$/)).toBeDefined()
   expect(await look(/✻/)).toBeDefined()
 
-  // Typing shows no words, only the keys, the cursor and the sparks.
+  // Typing shows no words: the front arm goes down onto the keys and back
+  // up, and the sparks keep popping.
+  const armDown = /^▀█▀█▀█▀█ $/
+  const beats = new Set<boolean>()
   for (let i = 0; i < 4; i++) {
     await clock.advance(250)
     expect(await look(/tap/)).toBeUndefined()
     expect(await look(/✻/)).toBeDefined()
+    expect(await look(sideways)).toBeDefined()
+    beats.add(Boolean(await look(armDown)))
   }
+  expect([...beats].sort()).toEqual([false, true])
 
   await ($.turn as any).complete({}).catch(() => undefined)
   await clock.advance(500)
@@ -116,8 +131,10 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
 
   await clock.advance(2_000)
   expect(await look(/hi!/)).toBeDefined()
-  expect(await look(/^▀▀▀▀$/)).toBeUndefined()
-  expect(await look(/^▄▄▄▄$/)).toBeUndefined()
+  expect(await look(facing)).toBeDefined()
+  expect(await look(/╲/)).toBeUndefined()
+  expect(await look(/^▀▀▀$/)).toBeUndefined()
+  expect(await look(/^▄▄▄$/)).toBeUndefined()
 })
 
 test('fits in three rows when the band has no fourth', async ($, on) => {
