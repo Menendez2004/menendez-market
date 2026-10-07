@@ -26,7 +26,7 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface, ...CORNER } as never)
     expect(await texts(ui as never, /hi!/)).toBeDefined()
-    expect(await texts(ui as never, / █▀█▀█▀█ /)).toBeDefined()
+    expect(await texts(ui as never, / █ █ █ █ /)).toBeDefined()
     expect(await texts(ui as never, /▐/)).toBeDefined()
     expect(await texts(ui as never, /▀▀▀▀/)).toBeUndefined()
     await ui.unmount()
@@ -47,12 +47,12 @@ test('asleep, Clawd breathes and Zs float up out of its head', async ($, on) => 
   await clock.advance(61_000)
 
   const frames: string[] = []
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 16; i++) {
     await clock.advance(250)
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
-    const head = (await ui.find({ type: 'Text', text: /▄▄▄|███/ } as never)) as { text?: string } | undefined
+    const squashedLegs = await ui.find({ type: 'Text', text: /█▀█▀█▀█/ } as never)
     const zs = (await ui.find({ type: 'Text', text: /^[·zZ]$/ } as never)) as unknown
-    frames.push(`${head?.text?.includes('▄▄▄') ? 'out' : 'in'}:${zs ? 'z' : '-'}`)
+    frames.push(`${squashedLegs ? 'out' : 'in'}:${zs ? 'z' : '-'}`)
     await ui.unmount()
   }
   expect(frames.some(f => f.startsWith('out'))).toBe(true)
@@ -92,7 +92,7 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
 
   await clock.advance(500)
   expect(await look(/got it!/)).toBeDefined()
-  expect(await look(/▄▄▄▄/)).toBeDefined()
+  expect(await look(/▀▀▀▀/)).toBeDefined()
 
   await clock.advance(1_000)
   expect(await look(/▀▀▀▀/)).toBeDefined()
@@ -116,7 +116,7 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/▄▄▄▄/)).toBeUndefined()
 })
 
-test('fits in two rows when the band has no third', async ($, on) => {
+test('fits in three rows when the band has no fourth', async ($, on) => {
   mock.clock(on)
   await start($, on)
 
@@ -124,10 +124,10 @@ test('fits in two rows when the band has no third', async ($, on) => {
     plugin: 'clawd-pet',
     surface: 'terminal',
     component: 'AbovePrompt',
-    props: { ...CORNER.props, maxRows: 2 },
+    props: { ...CORNER.props, maxRows: 3 },
   } as never)
   expect(await texts(ui as never, /hi!/)).toBeDefined()
-  expect(await texts(ui as never, / █▀█▀█▀█ /)).toBeDefined()
+  expect(await texts(ui as never, / █ █ █ █ /)).toBeDefined()
   await ui.unmount()
 })
 
