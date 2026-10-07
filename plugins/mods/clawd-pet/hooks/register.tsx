@@ -7,6 +7,10 @@ const mood = atom({ plugin: 'clawd-pet', key: 'mood' } as const, 'awake')
 const frame = atom({ plugin: 'clawd-pet', key: 'frame' } as const, 0)
 const isHidden = atom({ plugin: 'clawd-pet', key: 'isHidden' } as const, false)
 const laptopStep = atom({ plugin: 'clawd-pet', key: 'laptopStep' } as const, 0)
+const isPlanMode = atom({ plugin: 'clawd-pet', key: 'isPlanMode' } as const, false)
+
+// How long Clawd stays knocked out after a command fails.
+const ERROR_MS = 3000
 
 // A quarter second a frame, so the typing looks quick; the laptop moves on
 // every other frame, so it still takes about two seconds to come out.
@@ -30,6 +34,8 @@ const SLEEPY_EYE = '#8A3F1C'
 const Z_FADED = '#7A5A4A'
 const SCREEN_GLOW = '#CFE3F7'
 const SCREEN_DIM = '#8FB4DA'
+const HAT_YELLOW = '#E8B04B'
+const HAT_BADGE = '#B07A1E'
 
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
@@ -129,6 +135,53 @@ function laptopRows(step: number, isWorking: boolean, tick: number): Seg[][] {
   return [empty, empty, empty]
 }
 
+// The hard hat Clawd wears while Claude is in plan mode: a yellow dome with
+// a darker badge in the row above its head, and the brim painted over the
+// empty top half of its head row, so it sits right on top of the head.
+function hatRow(): Seg[] {
+  const hat = (text: string, color = HAT_YELLOW): Seg => ({ text, color, bold: true })
+  return [{ text: '  ' }, hat('▄▄'), hat('▄', HAT_BADGE), hat('▄▄'), { text: '  ' }]
+}
+
+function brimRow(): Seg[] {
+  return [
+    { text: '▀', color: HAT_YELLOW, bold: true },
+    { text: '▀▀▀▀▀▀▀', color: HAT_YELLOW, backgroundColor: ORANGE, bold: true },
+    { text: '▀', color: HAT_YELLOW, bold: true },
+  ]
+}
+
+// Planning, Clawd faces you under its hard hat and marches in place: its
+// legs step between two stances every half second.
+function marchingLegs(tick: number): Seg[] {
+  const legs = Math.floor(tick / 2) % 2 === 0 ? ' █▀█▀█▀█ ' : ' ▀█▀█▀█▀ '
+  return [{ text: legs, color: ORANGE, bold: true }]
+}
+
+// Knocked out after a command fails: Clawd lies flat on its back, its legs
+// in the air, its eyes crossed out (×), with stars spinning over it and the
+// laptop tumbling off behind it.
+//
+//   . . . . . . . . .     legs up
+//   . # . # . # . # .
+//   # # X # # # X # #     flat body
+//   # # # # # # # # #
+function knockedOutRows(): Seg[][] {
+  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
+  const eye: Seg = { text: '×', color: EYE_BLACK, backgroundColor: ORANGE, bold: true }
+  return [
+    [body(' ▄ ▄ ▄ ▄ ')],
+    [body('██'), eye, body('███'), eye, body('██')],
+  ]
+}
+
+const STARS = ['  ✦   ✧  ', '   ✧ ✦   ', '  ✧   ✦  ', '   ✦ ✧   ']
+
+function starRow(tick: number): Seg[] {
+  const stars = STARS[Math.floor(tick / 2) % STARS.length] ?? ''
+  return [...stars].map(ch => (ch === ' ' ? { text: ch } : { text: ch, color: SPARK_YELLOW, bold: true }))
+}
+
 // The sparks that pop out of the laptop while Clawd types, one frame per
 // tick, in the row above the laptop and as wide as it.
 const SPARKS = ['  ✻  ', ' · ✻ ', '✻  · ', ' ✻  ·']
@@ -167,26 +220,50 @@ async function setMood($: EngineInterface, next: PetMood) {
   }
 }
 
+// What moodNow needs to know beyond the plugin's state.
+type Clock = { lastActivityAt: number; isTurnRunning: boolean; errorUntil: number; idleMs: number }
+
+// Clawd's mood right now: knocked out for a few seconds after a failed
+// command, planning or working while a turn runs, asleep once the person has
+// been idle long enough, awake otherwise.
+async function moodNow($: EngineInterface, c: Clock): Promise<PetMood> {
+  const now = await $.clock.now()
+  if (now < c.errorUntil) {
+    return 'error'
+  }
+  if (c.isTurnRunning) {
+    return (await read($, isPlanMode)) ? 'planning' : 'working'
+  }
+  return now - c.lastActivityAt >= c.idleMs ? 'sleeping' : 'awake'
+}
+
+// Plan mode comes in on the settings-hook events as `permission_mode`.
+async function notePermissionMode($: EngineInterface, permissionMode: string | undefined) {
+  if (permissionMode !== undefined && (await read($, isPlanMode)) !== (permissionMode === 'plan')) {
+    await update($, isPlanMode, () => permissionMode === 'plan')
+  }
+}
+
 export const register: Register = (on, options) => {
   const idleMs = Math.max(5, Number(options.idleSeconds ?? 60)) * 1000
-  let lastActivityAt = 0
-  let isTurnRunning = false
+  const c: Clock = { lastActivityAt: 0, isTurnRunning: false, errorUntil: 0, idleMs }
 
   on('session.start', async ($, e, next) => {
-    lastActivityAt = await $.clock.now()
+    c.lastActivityAt = await $.clock.now()
     await update($, mood, () => 'awake')
 
     $.clock.every(TICK_MS, async () => {
-      const now = await $.clock.now()
-      const current: PetMood = isTurnRunning
-        ? 'working'
-        : now - lastActivityAt >= idleMs
-          ? 'sleeping'
-          : 'awake'
+      const current = await moodNow($, c)
       await setMood($, current)
       if ((await read($, frame)) % 2 === 0) {
+        // Working, the laptop comes out; knocked out, it stays where it was;
+        // otherwise (planning included) it goes back behind Clawd's back.
         await update($, laptopStep, step =>
-          current === 'working' ? Math.min(OPEN, (step ?? STOWED) + 1) : Math.max(STOWED, (step ?? STOWED) - 1),
+          current === 'working'
+            ? Math.min(OPEN, (step ?? STOWED) + 1)
+            : current === 'error'
+              ? (step ?? STOWED)
+              : Math.max(STOWED, (step ?? STOWED) - 1),
         )
       }
       await update($, frame, n => ((n ?? 0) + 1) % 1000)
@@ -210,29 +287,67 @@ export const register: Register = (on, options) => {
 
   // Anything the person does in the prompt box wakes Clawd up.
   on('prompt.edit', async ($, e, next) => {
-    lastActivityAt = await $.clock.now()
-    await setMood($, isTurnRunning ? 'working' : 'awake')
+    c.lastActivityAt = await $.clock.now()
+    await setMood($, await moodNow($, c))
     return next(e)
   })
 
   on('prompt.submit', async ($, e, next) => {
-    isTurnRunning = true
-    lastActivityAt = await $.clock.now()
-    await setMood($, isTurnRunning ? 'working' : 'awake')
+    c.isTurnRunning = true
+    c.lastActivityAt = await $.clock.now()
+    await setMood($, await moodNow($, c))
     return next(e)
   })
 
   on('turn.start', async ($, e, next) => {
-    isTurnRunning = true
-    lastActivityAt = await $.clock.now()
-    await setMood($, isTurnRunning ? 'working' : 'awake')
+    c.isTurnRunning = true
+    c.lastActivityAt = await $.clock.now()
+    await setMood($, await moodNow($, c))
     return next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
-    isTurnRunning = false
-    lastActivityAt = await $.clock.now()
-    await setMood($, isTurnRunning ? 'working' : 'awake')
+    c.isTurnRunning = false
+    c.lastActivityAt = await $.clock.now()
+    await setMood($, await moodNow($, c))
+    return next(e)
+  })
+
+  on('classic.UserPromptSubmit', async ($, e, next) => {
+    await notePermissionMode($, e.permission_mode)
+    return next(e)
+  })
+
+  on('classic.PostToolUse', async ($, e, next) => {
+    await notePermissionMode($, e.permission_mode)
+    return next(e)
+  })
+
+  // Entering plan mode puts the hat on; a plan accepted takes it off.
+  on('tool.call', { tool: 'EnterPlanMode' }, async ($, e, next) => {
+    const result = await next(e)
+    if (!result.deny && !result.isError) {
+      await update($, isPlanMode, () => true)
+    }
+    return result
+  })
+
+  on('tool.call', { tool: 'ExitPlanMode' }, async ($, e, next) => {
+    const result = await next(e)
+    if (!result.deny && !result.isError) {
+      await update($, isPlanMode, () => false)
+    }
+    return result
+  })
+
+  // A failing command (a build, a test run, a script) knocks Clawd out for a
+  // few seconds; an interrupt does not count.
+  on('classic.PostToolUseFailure', async ($, e, next) => {
+    await notePermissionMode($, e.permission_mode)
+    if (e.tool_name === 'Bash' && !e.is_interrupt) {
+      c.errorUntil = (await $.clock.now()) + ERROR_MS
+      await setMood($, 'error')
+    }
     return next(e)
   })
 
@@ -253,12 +368,19 @@ export const register: Register = (on, options) => {
     const isWorking = current === 'working'
     const isTyping = isWorking && step === OPEN
     const isAsleep = current === 'sleeping'
+    const isPlanning = current === 'planning'
+    const isKnockedOut = current === 'error'
+    const wearsHat = !isAsleep && !isKnockedOut && (isPlanning || (await read($, isPlanMode)))
     const eyes: Eyes = isAsleep ? 'asleep' : current === 'awake' && tick % 28 === 27 ? 'blink' : 'open'
     // From the moment it turns to grab the laptop until it has put it back,
     // Clawd is in profile; otherwise it faces you.
-    const isSideways = step > STOWED
+    const isSideways = step > STOWED && !isKnockedOut
     const bubble =
-      isAsleep
+      isKnockedOut
+        ? ['', '', '', 'oops!']
+        : isPlanning
+          ? ['', '', '', `planning${'.'.repeat((Math.floor(tick / 2) % 3) + 1)}`]
+          : isAsleep
         ? ['', '', '', 'Zzz…']
         : isTyping
           ? ['', '', '', '']
@@ -269,9 +391,26 @@ export const register: Register = (on, options) => {
               : ['', '', '', 'hi!']
     const blank: Seg[] = [{ text: ' ' }]
     const laptop = [isTyping ? sparkRow(tick) : [{ text: '     ' }], ...laptopRows(step, isWorking, tick)]
-    const body = isSideways ? sidePetRows(isTyping && tick % 2 === 1) : petRows(eyes)
-    const pet = [isAsleep ? sleepRow(tick) : blank, ...body]
-    const behind = [blank, ...behindRows(step)]
+    const front = petRows(eyes)
+    const body: Seg[][] = isKnockedOut
+      ? [[{ text: '         ' }], ...knockedOutRows()]
+      : isSideways
+        ? sidePetRows(isTyping && tick % 2 === 1)
+        : isPlanning
+          ? [front[0] ?? blank, front[1] ?? blank, marchingLegs(tick)]
+          : front
+    const head = body[0] ?? blank
+    const pet = [
+      isKnockedOut ? starRow(tick) : isAsleep ? sleepRow(tick) : wearsHat ? hatRow() : blank,
+      wearsHat ? brimRow() : head,
+      ...body.slice(1),
+    ]
+    const tumblingLaptop: Seg[][] = [
+      [{ text: ' ' }],
+      [{ text: '▞', color: LAPTOP_GREY, bold: true }],
+      [{ text: '▀', color: LAPTOP_DIM }],
+    ]
+    const behind = [blank, ...(isKnockedOut ? tumblingLaptop : behindRows(step))]
     const rows = e.props.maxRows >= 4 ? 4 : 3
     const fit = <T,>(column: T[]): T[] => column.slice(column.length - rows)
 
