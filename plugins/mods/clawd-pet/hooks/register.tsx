@@ -14,11 +14,11 @@ const TICK_MS = 250
 
 // Where the laptop is, one step every other tick toward OPEN while Claude
 // works and back toward STOWED once it stops.
-const STOWED = 0 // behind Clawd's back, one corner peeking out
-const REACHING = 1 // Clawd reaches back and grabs it
-const LIFTED = 2 // pulled out, held up closed in front
-const SET_DOWN = 3 // set down closed in front
-const OPEN = 4 // open in front, Clawd types
+const STOWED = 0 // Clawd faces you, the laptop behind its back, one corner peeking out
+const TURNED = 1 // Clawd turns sideways, facing left, and grabs the laptop
+const LIFTED = 2 // pulled out, held up closed in front of it
+const SET_DOWN = 3 // set down closed on the ground in front of it
+const OPEN = 4 // opened sideways, the screen tilted back; Clawd types
 
 // Fixed colors, so Clawd stays vivid whatever the terminal theme.
 const ORANGE = '#E8713A'
@@ -28,6 +28,8 @@ const LAPTOP_DIM = '#5C5C5C'
 const SPARK_YELLOW = '#FFD166'
 const SLEEPY_EYE = '#8A3F1C'
 const Z_FADED = '#7A5A4A'
+const SCREEN_GLOW = '#CFE3F7'
+const SCREEN_DIM = '#8FB4DA'
 
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
@@ -43,70 +45,85 @@ type Seg = { text: string; color?: string; backgroundColor?: string; bold?: bool
 //   . # . # . # . # .     row 4  legs
 //
 // An eye is one pixel: black when open (`▀`, black over orange), a dark
-// orange line when it blinks or while asleep. Each arm spans two pixel rows;
-// while Claude works the arms take turns dropping one pixel onto the keys,
-// and the right arm goes up one pixel to reach behind Clawd's back for the
-// laptop. Asleep, Clawd lies still: only the Zs above it move.
-type Arm = 'rest' | 'down' | 'up'
+// orange line when it blinks or while asleep. Facing you, Clawd only idles
+// and sleeps; asleep it lies still and only the Zs above it move. To work it
+// turns sideways (below).
 type Eyes = 'open' | 'blink' | 'asleep'
 
-// An arm's three cells, top row to bottom row, for each of its positions.
-const ARM: Record<Arm, [string, string, string]> = {
-  rest: [' ', '█', ' '], // pixel rows 1 and 2
-  down: [' ', '▄', '▀'], // pixel rows 2 and 3
-  up: ['▄', '▀', ' '], // pixel rows 0 and 1
-}
-
-function petRows(eyes: Eyes, leftArm: Arm, rightArm: Arm): Seg[][] {
+function petRows(eyes: Eyes): Seg[][] {
   const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
   const eye: Seg =
     eyes === 'open'
       ? { text: '▀', color: EYE_BLACK, backgroundColor: ORANGE }
       : { text: '▀', color: SLEEPY_EYE, backgroundColor: ORANGE }
-  const [leftTop, leftMid, leftLow] = ARM[leftArm]
-  const [rightTop, rightMid, rightLow] = ARM[rightArm]
 
   return [
-    [body(`${leftTop}▄▄▄▄▄▄▄${rightTop}`)],
-    [body(`${leftMid}█`), eye, body('███'), eye, body(`█${rightMid}`)],
-    [body(`${leftLow}█▀█▀█▀█${rightLow}`)],
+    [body(' ▄▄▄▄▄▄▄ ')],
+    [body('██'), eye, body('███'), eye, body('██')],
+    [body(' █▀█▀█▀█ ')],
+  ]
+}
+
+// Clawd in profile, facing left, as it works: the same 9×5 body with both
+// eyes toward the front (left) and one arm, the front one, reaching out to
+// the keyboard; the back arm is hidden behind its body.
+//
+//   . # # # # # # # .     row 0  head
+//   . # E # # E # # .     row 1  eyes
+//   A # # # # # # # .     row 2  front arm (at rest)
+//   a # # # # # # # .     row 3  front arm (on the keys)
+//   . # . # . # . # .     row 4  legs
+//
+// Typing, the front arm drops one pixel onto the keys and back up.
+function sidePetRows(isArmDown: boolean): Seg[][] {
+  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
+  const eye: Seg = { text: '▀', color: EYE_BLACK, backgroundColor: ORANGE }
+
+  return [
+    [body(' ▄▄▄▄▄▄▄ ')],
+    [body(`${isArmDown ? ' ' : '▄'}█`), eye, body('██'), eye, body('██ ')],
+    [body(`${isArmDown ? '▀' : ' '}█▀█▀█▀█ `)],
   ]
 }
 
 // The corner of the laptop peeking out from behind Clawd's back, one column
-// right of its head: dim while stowed, bright while Clawd grabs it, gone once
-// out.
+// right of its head: dim while stowed, bright while Clawd turns and grabs it,
+// gone once out.
 function behindRows(step: number): Seg[][] {
   const none: Seg[] = [{ text: ' ' }]
   if (step === STOWED) {
     return [[{ text: '▐', color: LAPTOP_DIM }], none, none]
   }
-  if (step === REACHING) {
+  if (step === TURNED) {
     return [[{ text: '█', color: LAPTOP_GREY }], none, none]
   }
   return [none, none, none]
 }
 
-// The laptop in front of Clawd, four columns wide at every step so Clawd
-// never shifts: lifted closed at arm height, set down closed, then open with
-// the screen showing a blinking prompt while Claude works.
+// The laptop, seen from the side like Clawd, five columns wide at every step
+// so Clawd never shifts: held up closed at arm height, set down closed, then
+// opened with the screen tilted back toward the left and the keyboard
+// running up to Clawd's front arm. While Clawd types the screen flickers.
 function laptopRows(step: number, isWorking: boolean, tick: number): Seg[][] {
-  const empty: Seg[] = [{ text: '    ' }]
+  const empty: Seg[] = [{ text: '     ' }]
+  const grey = (text: string): Seg => ({ text, color: LAPTOP_GREY, bold: true })
 
   if (step === LIFTED) {
-    return [empty, [{ text: '▀▀▀▀', color: LAPTOP_GREY }], empty]
+    return [empty, [{ text: '  ' }, grey('▄▄▄')], empty]
   }
   if (step === SET_DOWN) {
-    return [empty, empty, [{ text: '▄▄▄▄', color: LAPTOP_GREY }]]
+    return [empty, empty, [{ text: '  ' }, grey('▀▀▀')]]
   }
   if (step === OPEN) {
-    const screen: Seg = isWorking
-      ? { text: tick % 2 === 0 ? '>_' : '>█', color: '#7CFC9A', backgroundColor: '#1A1A1A', bold: true }
-      : { text: '✻ ', color: ORANGE, backgroundColor: '#1A1A1A', bold: true }
+    const screen: Seg = {
+      text: '╲',
+      color: isWorking && tick % 2 === 1 ? SCREEN_DIM : SCREEN_GLOW,
+      bold: true,
+    }
     return [
-      empty,
-      [{ text: '▐', color: LAPTOP_GREY }, screen, { text: '▌', color: LAPTOP_GREY }],
-      [{ text: '▀▀▀▀', color: LAPTOP_GREY }],
+      [screen, { text: '    ' }],
+      [{ text: ' ' }, screen, { text: '   ' }],
+      [{ text: '  ' }, grey('▀▀▀')],
     ]
   }
   return [empty, empty, empty]
@@ -114,7 +131,7 @@ function laptopRows(step: number, isWorking: boolean, tick: number): Seg[][] {
 
 // The sparks that pop out of the laptop while Clawd types, one frame per
 // tick, in the row above the laptop and as wide as it.
-const SPARKS = ['  ✻ ', ' · ✻', '✻ · ', ' ✻ ·']
+const SPARKS = ['  ✻  ', ' · ✻ ', '✻  · ', ' ✻  ·']
 
 function sparkRow(tick: number): Seg[] {
   const sparks = SPARKS[tick % SPARKS.length] ?? ''
@@ -237,22 +254,23 @@ export const register: Register = (on, options) => {
     const isTyping = isWorking && step === OPEN
     const isAsleep = current === 'sleeping'
     const eyes: Eyes = isAsleep ? 'asleep' : current === 'awake' && tick % 28 === 27 ? 'blink' : 'open'
-    const keyBeat = tick % 4
-    const leftArm: Arm = isTyping && keyBeat === 0 ? 'down' : 'rest'
-    const rightArm: Arm = step === REACHING ? 'up' : isTyping && keyBeat === 2 ? 'down' : 'rest'
+    // From the moment it turns to grab the laptop until it has put it back,
+    // Clawd is in profile; otherwise it faces you.
+    const isSideways = step > STOWED
     const bubble =
       isAsleep
         ? ['', '', '', 'Zzz…']
         : isTyping
           ? ['', '', '', '']
           : isWorking
-            ? ['', '', '', step <= REACHING ? 'hmm…' : 'got it!']
+            ? ['', '', '', step <= TURNED ? 'hmm…' : 'got it!']
             : step > STOWED
               ? ['', '', '', 'done!']
               : ['', '', '', 'hi!']
     const blank: Seg[] = [{ text: ' ' }]
-    const laptop = [isTyping ? sparkRow(tick) : [{ text: '    ' }], ...laptopRows(step, isWorking, tick)]
-    const pet = [isAsleep ? sleepRow(tick) : blank, ...petRows(eyes, leftArm, rightArm)]
+    const laptop = [isTyping ? sparkRow(tick) : [{ text: '     ' }], ...laptopRows(step, isWorking, tick)]
+    const body = isSideways ? sidePetRows(isTyping && tick % 2 === 1) : petRows(eyes)
+    const pet = [isAsleep ? sleepRow(tick) : blank, ...body]
     const behind = [blank, ...behindRows(step)]
     const rows = e.props.maxRows >= 4 ? 4 : 3
     const fit = <T,>(column: T[]): T[] => column.slice(column.length - rows)
@@ -280,9 +298,7 @@ export const register: Register = (on, options) => {
         <Box flexDirection="column" marginLeft={1}>
           {fit(laptop).map((r, i) => drawRow(r, `laptop-${i}`))}
         </Box>
-        <Box flexDirection="column" marginLeft={1}>
-          {fit(pet).map((r, i) => drawRow(r, `pet-${i}`))}
-        </Box>
+        <Box flexDirection="column">{fit(pet).map((r, i) => drawRow(r, `pet-${i}`))}</Box>
         <Box flexDirection="column">{fit(behind).map((r, i) => drawRow(r, `behind-${i}`))}</Box>
       </Box>
     )
