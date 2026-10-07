@@ -25,7 +25,8 @@ test('Clawd is awake with its laptop, then sleeps with Zzz when idle', async ($,
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface, ...BAND } as never)
     expect(await texts(ui as never, /ready when you are/)).toBeDefined()
-    expect(await texts(ui as never, /╭─────────╮/)).toBeDefined()
+    expect(await texts(ui as never, /╭───────╮/)).toBeDefined()
+    expect(await texts(ui as never, / █ █   █ █ /)).toBeDefined()
     await ui.unmount()
   }
 
