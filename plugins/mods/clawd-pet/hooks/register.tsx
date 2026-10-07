@@ -98,7 +98,7 @@ export const register: Register = (on, options) => {
     try {
       await $.command.register({
         name: 'pet',
-        description: 'Show or hide Clawd, the Claude pet in the prompt's corner.',
+        description: 'Show or hide Clawd, the Claude pet in the corner under the prompt.',
       })
     } catch {}
 
@@ -170,8 +170,11 @@ export const register: Register = (on, options) => {
       </Text>
     )
 
+    // Pinned to the right edge whichever way the footer lays out: beside the
+    // hint line it grows into the free width and pushes right; stacked under
+    // it (a narrow terminal, or a tall footer) it aligns itself right.
     return (
-      <Box flexDirection="row" alignItems="flex-end">
+      <Box flexDirection="row" alignItems="flex-end" flexGrow={1} justifyContent="flex-end" alignSelf="flex-end">
         {e.props.modes.length > 0 ? (
           <Text dimColor>{`${e.props.modes.join(' & ')}  `}</Text>
         ) : null}
