@@ -85,6 +85,23 @@
         "faker",
         "factories"
       ]
+    },
+    {
+      "name": "clawd-pet",
+      "source": "./plugins/mods/clawd-pet",
+      "description": "Clawd, the Claude pet from the desktop app, lives above the Claude Code CLI prompt with its laptop: it waves when you are around, types on its laptop while Claude works, and falls asleep with a floating \"Zzz\" when you stop typing (60 s by default, set idleSeconds in /config). Type anything to wake it; /pet hides or shows it.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "keywords": [
+        "pet",
+        "mod",
+        "companion",
+        "clawd",
+        "fun",
+        "idle"
+      ]
     }
   ]
 }
