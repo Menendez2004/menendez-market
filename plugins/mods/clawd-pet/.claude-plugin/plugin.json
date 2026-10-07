@@ -1,7 +1,7 @@
 {
   "name": "clawd-pet",
-  "version": "1.1.0",
-  "description": "Clawd, the Claude pet, sits in the bottom-right corner under your prompt with its laptop: it types while Claude works and falls asleep (Zzz) when you are idle.",
+  "version": "1.2.0",
+  "description": "Clawd, the Claude pet, sits right above your prompt, on the right, with its laptop: it types while Claude works and falls asleep (Zzz) when you are idle.",
   "author": { "name": "Menendez2004" },
   "types": "./types/index.d.ts",
   "userConfig": {
