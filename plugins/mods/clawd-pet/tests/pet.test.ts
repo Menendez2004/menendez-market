@@ -1,6 +1,9 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-const CORNER = { component: 'SessionMode', props: { modes: [] } } as const
+const CORNER = {
+  component: 'AbovePrompt',
+  props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 80 },
+} as const
 
 const start = async ($: any, on: any) => {
   on('command.register', () => ({ value: { command: 'pet' } }))
@@ -87,16 +90,19 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/▄▄▄▄/)).toBeUndefined()
 })
 
-test('keeps the mode labels the footer already shows', async ($, on) => {
+test('gives the band back to a survey', async ($, on) => {
   mock.clock(on)
   await start($, on)
 
-  const ui = await $.ui.mount({
-    plugin: 'clawd-pet',
-    surface: 'terminal',
-    component: 'SessionMode',
-    props: { modes: ['focus', 'memory paused'] },
-  } as never)
-  expect(await texts(ui as never, /focus & memory paused/)).toBeDefined()
-  await ui.unmount()
+  // The pet passes, so the drawing falls to what is beneath it: in a test,
+  // nothing, which the mount reports instead of drawing Clawd.
+  const error = await $.ui
+    .mount({
+      plugin: 'clawd-pet',
+      surface: 'terminal',
+      component: 'AbovePrompt',
+      props: { ...CORNER.props, hasSurvey: true },
+    } as never)
+    .then(() => undefined, (err: Error) => err)
+  expect(String(error)).toContain('no implementation for ui.render')
 })
