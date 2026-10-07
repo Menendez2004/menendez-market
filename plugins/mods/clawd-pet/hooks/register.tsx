@@ -132,7 +132,7 @@ export const register: Register = (on, options) => {
     try {
       await $.command.register({
         name: 'pet',
-        description: 'Show or hide Clawd, the Claude pet in the corner under the prompt.',
+        description: 'Show or hide Clawd, the Claude pet above the prompt.',
       })
     } catch {}
 
@@ -172,10 +172,10 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // Clawd sits in the bottom-right corner, at the right end of the footer
-  // under the prompt, beside the mode labels the engine draws there.
-  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
-    if (await read($, isHidden)) {
+  // Clawd sits in the band right above the prompt, against its right edge,
+  // on two rows of its own so nothing squeezes it.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey || e.props.maxRows < 2 || (await read($, isHidden))) {
       return next(e)
     }
 
@@ -213,14 +213,9 @@ export const register: Register = (on, options) => {
       </Text>
     )
 
-    // Pinned to the right edge whichever way the footer lays out: beside the
-    // hint line it grows into the free width and pushes right; stacked under
-    // it (a narrow terminal, or a tall footer) it aligns itself right.
+    // As wide as the band, everything pushed to its right end.
     return (
-      <Box flexDirection="row" alignItems="flex-end" flexGrow={1} justifyContent="flex-end" alignSelf="flex-end">
-        {e.props.modes.length > 0 ? (
-          <Text dimColor>{`${e.props.modes.join(' & ')}  `}</Text>
-        ) : null}
+      <Box flexDirection="row" alignItems="flex-end" justifyContent="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="column" alignItems="flex-end">
           {bubble.map((row, i) => (
             <Text key={`bubble-${i}`} color={ORANGE} bold={current === 'sleeping'}>
