@@ -8,12 +8,12 @@ const frame = atom({ plugin: 'clawd-pet', key: 'frame' } as const, 0)
 const isHidden = atom({ plugin: 'clawd-pet', key: 'isHidden' } as const, false)
 const laptopStep = atom({ plugin: 'clawd-pet', key: 'laptopStep' } as const, 0)
 
-// Half a second a frame: fast enough for the laptop to come out in two
-// seconds, slow enough that the footer is not redrawn constantly.
-const TICK_MS = 500
+// A quarter second a frame, so the typing looks quick; the laptop moves on
+// every other frame, so it still takes about two seconds to come out.
+const TICK_MS = 250
 
-// Where the laptop is, one step per tick toward OPEN while Claude works and
-// back toward STOWED once it stops.
+// Where the laptop is, one step every other tick toward OPEN while Claude
+// works and back toward STOWED once it stops.
 const STOWED = 0 // behind Clawd's back, one corner peeking out
 const REACHING = 1 // Clawd reaches back and grabs it
 const LIFTED = 2 // pulled out, held up closed in front
@@ -25,6 +25,7 @@ const ORANGE = '#E8713A'
 const EYE_BLACK = '#000000'
 const LAPTOP_GREY = '#A8A8A8'
 const LAPTOP_DIM = '#5C5C5C'
+const SPARK_YELLOW = '#FFD166'
 
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
@@ -40,7 +41,7 @@ type Seg = { text: string; color?: string; backgroundColor?: string; bold?: bool
 // An eye is the bottom half of its cell painted black (`▀`, orange on black)
 // when open, and a thin black slit (`▂`, black on orange) when shut. The right
 // arm goes up (`▀`) to reach behind Clawd's back for the laptop; while Claude
-// works both arms drop (`▁`) every other tick, as if typing.
+// works the arms take turns dropping onto the keys (`▁`), left then right.
 function petRows(isEyesClosed: boolean, leftArm: string, rightArm: string): Seg[][] {
   const eye: Seg = isEyesClosed
     ? { text: '▂', color: EYE_BLACK, backgroundColor: ORANGE }
@@ -80,7 +81,7 @@ function laptopRows(step: number, isWorking: boolean, tick: number): Seg[][] {
   }
   if (step === OPEN) {
     const screen: Seg = isWorking
-      ? { text: tick % 2 === 0 ? '>_' : '> ', color: '#7CFC9A', backgroundColor: '#1A1A1A', bold: true }
+      ? { text: tick % 2 === 0 ? '>_' : '>█', color: '#7CFC9A', backgroundColor: '#1A1A1A', bold: true }
       : { text: '✻ ', color: ORANGE, backgroundColor: '#1A1A1A', bold: true }
     return [
       [{ text: '▐', color: LAPTOP_GREY }, screen, { text: '▌', color: LAPTOP_GREY }],
@@ -90,7 +91,18 @@ function laptopRows(step: number, isWorking: boolean, tick: number): Seg[][] {
   return [[empty], [empty]]
 }
 
-// The "Zzz" that floats up while Clawd sleeps, one step per tick.
+// The sparks that pop out of the laptop while Clawd types, one frame per
+// tick, in the row above the laptop and as wide as it.
+const SPARKS = ['  ✻ ', ' · ✻', '✻ · ', ' ✻ ·']
+
+function sparkRow(tick: number): Seg[] {
+  const sparks = SPARKS[tick % SPARKS.length] ?? ''
+  return [...sparks].map(ch =>
+    ch === '✻' ? { text: ch, color: ORANGE, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch },
+  )
+}
+
+// The "Zzz" that floats up while Clawd sleeps, one step every second.
 const ZZZ = [
   ['    ', 'z   '],
   ['  z ', 'z   '],
@@ -122,9 +134,11 @@ export const register: Register = (on, options) => {
           ? 'sleeping'
           : 'awake'
       await setMood($, current)
-      await update($, laptopStep, step =>
-        current === 'working' ? Math.min(OPEN, (step ?? STOWED) + 1) : Math.max(STOWED, (step ?? STOWED) - 1),
-      )
+      if ((await read($, frame)) % 2 === 0) {
+        await update($, laptopStep, step =>
+          current === 'working' ? Math.min(OPEN, (step ?? STOWED) + 1) : Math.max(STOWED, (step ?? STOWED) - 1),
+        )
+      }
       await update($, frame, n => ((n ?? 0) + 1) % 1000)
     })
 
@@ -173,7 +187,9 @@ export const register: Register = (on, options) => {
   })
 
   // Clawd sits in the band right above the prompt, against its right edge,
-  // on two rows of its own so nothing squeezes it.
+  // on rows of its own so nothing squeezes it: three where the band has
+  // them (the top one for the sparks and the floating Z), two otherwise.
+  // The row count never changes with the mood, so the prompt never jumps.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey || e.props.maxRows < 2 || (await read($, isHidden))) {
       return next(e)
@@ -186,22 +202,26 @@ export const register: Register = (on, options) => {
 
     const isWorking = current === 'working'
     const isTyping = isWorking && step === OPEN
-    const isEyesClosed = current === 'sleeping' || (current === 'awake' && tick % 14 === 13)
-    const typingArm = isTyping && tick % 2 === 1 ? '▁' : '▄'
-    const rightArm = step === REACHING ? '▀' : typingArm
+    const isEyesClosed = current === 'sleeping' || (current === 'awake' && tick % 28 === 27)
+    const keyBeat = tick % 4
+    const leftArm = isTyping && keyBeat === 0 ? '▁' : '▄'
+    const rightArm = step === REACHING ? '▀' : isTyping && keyBeat === 2 ? '▁' : '▄'
     const bubble =
       current === 'sleeping'
-        ? [...(ZZZ[Math.floor(tick / 2) % ZZZ.length] ?? []).slice(0, 1), 'Zzz…']
+        ? [...(ZZZ[Math.floor(tick / 4) % ZZZ.length] ?? ['', '']), 'Zzz…']
         : isTyping
-          ? ['', `tap${'.'.repeat((Math.floor(tick / 2) % 3) + 1)}`]
+          ? ['', '', Math.floor(tick / 2) % 2 === 0 ? 'tap!' : 'tap tap!']
           : isWorking
-            ? ['', step <= REACHING ? 'hmm…' : 'got it!']
+            ? ['', '', step <= REACHING ? 'hmm…' : 'got it!']
             : step > STOWED
-              ? ['', 'done!']
-              : ['', 'hi!']
-    const pet = petRows(isEyesClosed, typingArm, rightArm)
-    const laptop = laptopRows(step, isWorking, tick)
-    const behind = behindRows(step)
+              ? ['', '', 'done!']
+              : ['', '', 'hi!']
+    const blank: Seg[] = [{ text: ' ' }]
+    const laptop = [isTyping ? sparkRow(tick) : [{ text: '    ' }], ...laptopRows(step, isWorking, tick)]
+    const pet = [blank, ...petRows(isEyesClosed, leftArm, rightArm)]
+    const behind = [blank, ...behindRows(step)]
+    const rows = e.props.maxRows >= 3 ? 3 : 2
+    const fit = <T,>(column: T[]): T[] => column.slice(column.length - rows)
 
     const drawRow = (segs: Seg[], key: string) => (
       <Text key={key}>
@@ -217,19 +237,19 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="row" alignItems="flex-end" justifyContent="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="column" alignItems="flex-end">
-          {bubble.map((row, i) => (
+          {fit(bubble).map((row, i) => (
             <Text key={`bubble-${i}`} color={ORANGE} bold={current === 'sleeping'}>
               {row || ' '}
             </Text>
           ))}
         </Box>
         <Box flexDirection="column" marginLeft={1}>
-          {laptop.map((r, i) => drawRow(r, `laptop-${i}`))}
+          {fit(laptop).map((r, i) => drawRow(r, `laptop-${i}`))}
         </Box>
         <Box flexDirection="column" marginLeft={1}>
-          {pet.map((r, i) => drawRow(r, `pet-${i}`))}
+          {fit(pet).map((r, i) => drawRow(r, `pet-${i}`))}
         </Box>
-        <Box flexDirection="column">{behind.map((r, i) => drawRow(r, `behind-${i}`))}</Box>
+        <Box flexDirection="column">{fit(behind).map((r, i) => drawRow(r, `behind-${i}`))}</Box>
       </Box>
     )
   })

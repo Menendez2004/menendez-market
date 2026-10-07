@@ -79,6 +79,16 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/tap/)).toBeDefined()
   expect(await look(/▀▀▀▀/)).toBeDefined()
   expect(await look(/>/)).toBeDefined()
+  expect(await look(/✻/)).toBeDefined()
+
+  // Fast typing: the bubble alternates and the sparks keep moving.
+  const seen = new Set<string>()
+  for (let i = 0; i < 4; i++) {
+    await clock.advance(250)
+    if (await look(/tap tap!/)) seen.add('tap tap!')
+    else if (await look(/tap!/)) seen.add('tap!')
+  }
+  expect([...seen].sort()).toEqual(['tap tap!', 'tap!'])
 
   await ($.turn as any).complete({}).catch(() => undefined)
   await clock.advance(500)
@@ -88,6 +98,21 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/hi!/)).toBeDefined()
   expect(await look(/▀▀▀▀/)).toBeUndefined()
   expect(await look(/▄▄▄▄/)).toBeUndefined()
+})
+
+test('fits in two rows when the band has no third', async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+
+  const ui = await $.ui.mount({
+    plugin: 'clawd-pet',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { ...CORNER.props, maxRows: 2 },
+  } as never)
+  expect(await texts(ui as never, /hi!/)).toBeDefined()
+  expect(await texts(ui as never, / █▀█▀█▀█ /)).toBeDefined()
+  await ui.unmount()
 })
 
 test('gives the band back to a survey', async ($, on) => {
