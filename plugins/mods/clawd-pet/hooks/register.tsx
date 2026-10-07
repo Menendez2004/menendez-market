@@ -8,68 +8,63 @@ const frame = atom({ plugin: 'clawd-pet', key: 'frame' } as const, 0)
 const isHidden = atom({ plugin: 'clawd-pet', key: 'isHidden' } as const, false)
 
 const TICK_MS = 1000
-const MIN_ART_COLUMNS = 52
-const ART_ROWS = 4
 
-const ORANGE = 'claude'
+// Fixed colors, so Clawd stays vivid whatever the terminal theme.
+const ORANGE = '#E8713A'
 const EYE_BLACK = '#000000'
+const LAPTOP_GREY = '#A8A8A8'
+const LAPTOP_DIM = '#5C5C5C'
 
 // One run of characters in a single style.
-type Seg = { text: string; color?: string; backgroundColor?: string }
+type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
 
-// Clawd as an 11×8 pixel sprite, two pixel rows per terminal row (half
-// blocks), so each pixel is about square:
+// Clawd as a 9×4 pixel sprite, two pixel rows per terminal row (half
+// blocks), so it fits in the two rows at the right of the prompt footer:
 //
-//   . # # # # # # # # # .     row 0  head
-//   . # # # # # # # # # .     row 1
-//   # # E # # # # # E # #     row 2  arms and eyes
-//   # # # # # # # # # # #     row 3  arms
-//   . # # # # # # # # # .     row 4  body
-//   . # # # # # # # # # .     row 5
-//   . # . # . . . # . # .     row 6  legs
-//   . # . # . . . # . # .     row 7
+//   . # # # # # # # .     row 0  head
+//   # # E # # # E # #     row 1  arms and eyes
+//   . # # # # # # # .     row 2  body
+//   . # . # . # . # .     row 3  legs
 //
-// An eye is the top half of its cell painted black: `▄` on a black
-// background when open, `▆` (a thin slit) when blinking or asleep. While
-// Claude works the arms drop half a cell every other tick, as if typing.
+// An eye is the bottom half of its cell painted black (`▀`, orange on black)
+// when open, and a thin black slit (`▂`, black on orange) when shut.
+// While Claude works the arms drop half a cell every other tick, as if typing.
 function petRows(isEyesClosed: boolean, isArmsDown: boolean): Seg[][] {
-  const eye: Seg = { text: isEyesClosed ? '▆' : '▄', color: ORANGE, backgroundColor: EYE_BLACK }
-  const armTop = isArmsDown ? '▄' : '█'
-  const armBottom = isArmsDown ? '▀' : ' '
+  const eye: Seg = isEyesClosed
+    ? { text: '▂', color: EYE_BLACK, backgroundColor: ORANGE }
+    : { text: '▀', color: ORANGE, backgroundColor: EYE_BLACK }
+  const arm = isArmsDown ? '▁' : '▄'
+  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
 
   return [
-    [{ text: ' █████████ ', color: ORANGE }],
-    [{ text: `${armTop}█`, color: ORANGE }, eye, { text: '█████', color: ORANGE }, eye, { text: `█${armTop}`, color: ORANGE }],
-    [{ text: `${armBottom}█████████${armBottom}`, color: ORANGE }],
-    [{ text: ' █ █   █ █ ', color: ORANGE }],
+    [body(`${arm}█`), eye, body('███'), eye, body(`█${arm}`)],
+    [body(' █▀█▀█▀█ ')],
   ]
 }
 
-// Clawd's laptop, open in front of it: the screen shows the Claude mark,
-// a prompt that blinks while Claude works, and goes dark while it sleeps.
+// Clawd's tiny laptop: the screen shows the Claude mark, a blinking prompt
+// while Claude works, and goes dark while Clawd sleeps.
 function laptopRows(current: PetMood, tick: number): Seg[][] {
-  const frame = current === 'sleeping' ? 'inactive' : 'subtle'
-  const screen: Seg[] =
+  const frame = current === 'sleeping' ? LAPTOP_DIM : LAPTOP_GREY
+  const screen: Seg =
     current === 'sleeping'
-      ? [{ text: '       ', color: frame }]
+      ? { text: '  ', backgroundColor: '#1A1A1A' }
       : current === 'working'
-        ? [{ text: ' ' }, { text: '✻', color: ORANGE }, { text: tick % 2 === 0 ? ' >_  ' : ' >   ' }]
-        : [{ text: '   ' }, { text: '✻', color: ORANGE }, { text: '   ' }]
+        ? { text: tick % 2 === 0 ? '>_' : '> ', color: '#7CFC9A', backgroundColor: '#1A1A1A', bold: true }
+        : { text: '✻ ', color: ORANGE, backgroundColor: '#1A1A1A', bold: true }
 
   return [
-    [{ text: ' ╭───────╮ ', color: frame }],
-    [{ text: ' │', color: frame }, ...screen, { text: '│ ', color: frame }],
-    [{ text: ' ╰───────╯ ', color: frame }],
-    [{ text: '▀▀▀▀▀▀▀▀▀▀▀', color: frame }],
+    [{ text: '▐', color: frame }, screen, { text: '▌', color: frame }],
+    [{ text: '▀▀▀▀', color: frame }],
   ]
 }
 
 // The "Zzz" that floats up while Clawd sleeps, one step per tick.
 const ZZZ = [
-  ['', '', 'z'],
-  ['', '  z', 'z'],
-  ['    Z', '  z', 'z'],
-  ['    Z', '  z', ''],
+  ['    ', 'z   '],
+  ['  z ', 'z   '],
+  [' Z  ', 'z z '],
+  ['Z   ', '  z '],
 ]
 
 // Writes the mood only when it changed, so an idle tick redraws nothing new.
@@ -103,7 +98,7 @@ export const register: Register = (on, options) => {
     try {
       await $.command.register({
         name: 'pet',
-        description: 'Show or hide Clawd, the Claude pet above the prompt.',
+        description: 'Show or hide Clawd, the Claude pet in the prompt's corner.',
       })
     } catch {}
 
@@ -143,39 +138,32 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey || (await read($, isHidden))) {
+  // Clawd sits in the bottom-right corner, at the right end of the footer
+  // under the prompt, beside the mode labels the engine draws there.
+  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    if (await read($, isHidden)) {
       return next(e)
     }
 
-    const stored = await read($, mood)
-    const current: PetMood = e.props.isWorking ? 'working' : stored
+    const current = await read($, mood)
     const tick = await read($, frame)
     const { Box, Text } = $.ui.resolve(e)
 
-    if (e.props.bodyColumns < MIN_ART_COLUMNS || e.props.maxRows < ART_ROWS) {
-      const line = current === 'sleeping' ? 'Clawd: Zzz…' : current === 'working' ? 'Clawd: tap tap…' : 'Clawd: hi! ✻'
-      return (
-        <Box>
-          <Text color={ORANGE}>{line}</Text>
-        </Box>
-      )
-    }
-
     const isEyesClosed = current === 'sleeping' || (current === 'awake' && tick % 7 === 6)
     const isArmsDown = current === 'working' && tick % 2 === 1
-    const dots = '.'.repeat((tick % 3) + 1)
     const bubble =
       current === 'sleeping'
-        ? [...(ZZZ[tick % ZZZ.length] ?? []), 'Zzz… (type to wake me)']
+        ? [...(ZZZ[tick % ZZZ.length] ?? []).slice(0, 1), 'Zzz…']
         : current === 'working'
-          ? ['', `tap tap${dots}`, '', 'working with Claude']
-          : ['', 'hi! ✻', '', 'ready when you are']
+          ? ['', `tap${'.'.repeat((tick % 3) + 1)}`]
+          : ['', 'hi!']
+    const pet = petRows(isEyesClosed, isArmsDown)
+    const laptop = laptopRows(current, tick)
 
     const drawRow = (segs: Seg[], key: string) => (
       <Text key={key}>
         {segs.map((seg, i) => (
-          <Text key={`${key}-${i}`} color={seg.color} backgroundColor={seg.backgroundColor}>
+          <Text key={`${key}-${i}`} color={seg.color} backgroundColor={seg.backgroundColor} bold={seg.bold}>
             {seg.text}
           </Text>
         ))}
@@ -183,17 +171,22 @@ export const register: Register = (on, options) => {
     )
 
     return (
-      <Box flexDirection="row">
-        <Box flexDirection="column">{petRows(isEyesClosed, isArmsDown).map((r, i) => drawRow(r, `pet-${i}`))}</Box>
-        <Box flexDirection="column" marginLeft={1}>
-          {laptopRows(current, tick).map((r, i) => drawRow(r, `laptop-${i}`))}
-        </Box>
-        <Box flexDirection="column" marginLeft={2}>
+      <Box flexDirection="row" alignItems="flex-end">
+        {e.props.modes.length > 0 ? (
+          <Text dimColor>{`${e.props.modes.join(' & ')}  `}</Text>
+        ) : null}
+        <Box flexDirection="column" alignItems="flex-end">
           {bubble.map((row, i) => (
-            <Text key={`bubble-${i}`} color={current === 'sleeping' ? ORANGE : undefined} dimColor={i === ART_ROWS - 1}>
+            <Text key={`bubble-${i}`} color={ORANGE} bold={current === 'sleeping'}>
               {row || ' '}
             </Text>
           ))}
+        </Box>
+        <Box flexDirection="column" marginLeft={1}>
+          {laptop.map((r, i) => drawRow(r, `laptop-${i}`))}
+        </Box>
+        <Box flexDirection="column" marginLeft={1}>
+          {pet.map((r, i) => drawRow(r, `pet-${i}`))}
         </Box>
       </Box>
     )
