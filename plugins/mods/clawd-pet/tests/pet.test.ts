@@ -41,6 +41,25 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
   }
 })
 
+test('asleep, Clawd breathes and Zs float up out of its head', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await clock.advance(61_000)
+
+  const frames: string[] = []
+  for (let i = 0; i < 12; i++) {
+    await clock.advance(250)
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const head = (await ui.find({ type: 'Text', text: /▄▄▄|███/ } as never)) as { text?: string } | undefined
+    const zs = (await ui.find({ type: 'Text', text: /^[·zZ]$/ } as never)) as unknown
+    frames.push(`${head?.text?.includes('▄▄▄') ? 'out' : 'in'}:${zs ? 'z' : '-'}`)
+    await ui.unmount()
+  }
+  expect(frames.some(f => f.startsWith('out'))).toBe(true)
+  expect(frames.some(f => f.startsWith('in'))).toBe(true)
+  expect(frames.every(f => f.endsWith('z'))).toBe(true)
+})
+
 test('typing in the prompt wakes Clawd up', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
@@ -76,9 +95,16 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/▄▄▄▄/)).toBeDefined()
 
   await clock.advance(1_000)
-  expect(await look(/tap/)).toBeDefined()
   expect(await look(/▀▀▀▀/)).toBeDefined()
   expect(await look(/>/)).toBeDefined()
+  expect(await look(/✻/)).toBeDefined()
+
+  // Typing shows no words, only the keys, the cursor and the sparks.
+  for (let i = 0; i < 4; i++) {
+    await clock.advance(250)
+    expect(await look(/tap/)).toBeUndefined()
+    expect(await look(/✻/)).toBeDefined()
+  }
 
   await ($.turn as any).complete({}).catch(() => undefined)
   await clock.advance(500)
@@ -88,6 +114,21 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
   expect(await look(/hi!/)).toBeDefined()
   expect(await look(/▀▀▀▀/)).toBeUndefined()
   expect(await look(/▄▄▄▄/)).toBeUndefined()
+})
+
+test('fits in two rows when the band has no third', async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+
+  const ui = await $.ui.mount({
+    plugin: 'clawd-pet',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { ...CORNER.props, maxRows: 2 },
+  } as never)
+  expect(await texts(ui as never, /hi!/)).toBeDefined()
+  expect(await texts(ui as never, / █▀█▀█▀█ /)).toBeDefined()
+  await ui.unmount()
 })
 
 test('gives the band back to a survey', async ($, on) => {
