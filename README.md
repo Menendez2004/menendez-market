@@ -61,7 +61,9 @@ claude plugin validate .
 
 Los mods (plugins de function hooks, como `clawd-pet`) viven en `plugins/mods/<nombre>/`
 con su propio `.claude-plugin/plugin.json`, y su entrada en `marketplace.json` usa
-`"source": "./plugins/mods/<nombre>"`. Para probarlos:
+`"source": "./plugins/mods/<nombre>"`. Cada cambio a un mod debe subir su `version`
+(en su `plugin.json` y en su entrada de `marketplace.json`): Claude Code guarda la copia
+instalada por versión, y si la versión no cambia `/plugin update` no la reemplaza. Para probarlos:
 
 ```bash
 claude plugin validate plugins/mods/clawd-pet
