@@ -26,6 +26,8 @@ const EYE_BLACK = '#000000'
 const LAPTOP_GREY = '#A8A8A8'
 const LAPTOP_DIM = '#5C5C5C'
 const SPARK_YELLOW = '#FFD166'
+const SLEEPY_EYE = '#8A3F1C'
+const Z_FADED = '#7A5A4A'
 
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
@@ -42,11 +44,24 @@ type Seg = { text: string; color?: string; backgroundColor?: string; bold?: bool
 // when open, and a thin black slit (`▂`, black on orange) when shut. The right
 // arm goes up (`▀`) to reach behind Clawd's back for the laptop; while Claude
 // works the arms take turns dropping onto the keys (`▁`), left then right.
-function petRows(isEyesClosed: boolean, leftArm: string, rightArm: string): Seg[][] {
+//
+// Asleep, Clawd breathes: on each breath out the top row of its head sinks
+// (`▄` in place of `█`) and its shut eyes become darker lines, then it fills
+// back out on the breath in.
+function petRows(isEyesClosed: boolean, leftArm: string, rightArm: string, isBreathingOut = false): Seg[][] {
+  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
+
+  if (isBreathingOut) {
+    const shutEye: Seg = { text: '▄', color: SLEEPY_EYE }
+    return [
+      [body(`${leftArm}▄`), shutEye, body('▄▄▄'), shutEye, body(`▄${rightArm}`)],
+      [body(' █▀█▀█▀█ ')],
+    ]
+  }
+
   const eye: Seg = isEyesClosed
     ? { text: '▂', color: EYE_BLACK, backgroundColor: ORANGE }
     : { text: '▀', color: ORANGE, backgroundColor: EYE_BLACK }
-  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
 
   return [
     [body(`${leftArm}█`), eye, body('███'), eye, body(`█${rightArm}`)],
@@ -102,13 +117,25 @@ function sparkRow(tick: number): Seg[] {
   )
 }
 
-// The "Zzz" that floats up while Clawd sleeps, one step every second.
-const ZZZ = [
-  ['    ', 'z   '],
-  ['  z ', 'z   '],
-  [' Z  ', 'z z '],
-  ['Z   ', '  z '],
-]
+// The Zs that float up out of Clawd's head while it sleeps, in the row above
+// it: each is born small over the top of its head and drifts right one column
+// every half second, growing from `·` to `z` to `Z` and fading on its last
+// step. Two are in the air at once, three steps apart.
+const Z_SHAPES = ['·', 'z', 'z', 'Z', 'Z']
+const Z_CYCLE = 6
+
+function sleepRow(tick: number): Seg[] {
+  const cells: Seg[] = Array.from({ length: 9 }, () => ({ text: ' ' }))
+  const beat = Math.floor(tick / 2)
+  for (const offset of [0, 3]) {
+    const age = (beat + offset) % Z_CYCLE
+    const shape = Z_SHAPES[age]
+    if (shape !== undefined) {
+      cells[4 + age] = { text: shape, color: age === Z_SHAPES.length - 1 ? Z_FADED : ORANGE, bold: age >= 3 }
+    }
+  }
+  return cells
+}
 
 // Writes the mood only when it changed, so an idle tick redraws nothing new.
 async function setMood($: EngineInterface, next: PetMood) {
@@ -206,11 +233,13 @@ export const register: Register = (on, options) => {
     const keyBeat = tick % 4
     const leftArm = isTyping && keyBeat === 0 ? '▁' : '▄'
     const rightArm = step === REACHING ? '▀' : isTyping && keyBeat === 2 ? '▁' : '▄'
+    const isAsleep = current === 'sleeping'
+    const isBreathingOut = isAsleep && Math.floor(tick / 4) % 2 === 1
     const bubble =
-      current === 'sleeping'
-        ? [...(ZZZ[Math.floor(tick / 4) % ZZZ.length] ?? ['', '']), 'Zzz…']
+      isAsleep
+        ? ['', '', 'Zzz…']
         : isTyping
-          ? ['', '', Math.floor(tick / 2) % 2 === 0 ? 'tap!' : 'tap tap!']
+          ? ['', '', '']
           : isWorking
             ? ['', '', step <= REACHING ? 'hmm…' : 'got it!']
             : step > STOWED
@@ -218,7 +247,7 @@ export const register: Register = (on, options) => {
               : ['', '', 'hi!']
     const blank: Seg[] = [{ text: ' ' }]
     const laptop = [isTyping ? sparkRow(tick) : [{ text: '    ' }], ...laptopRows(step, isWorking, tick)]
-    const pet = [blank, ...petRows(isEyesClosed, leftArm, rightArm)]
+    const pet = [isAsleep ? sleepRow(tick) : blank, ...petRows(isEyesClosed, leftArm, rightArm, isBreathingOut)]
     const behind = [blank, ...behindRows(step)]
     const rows = e.props.maxRows >= 3 ? 3 : 2
     const fit = <T,>(column: T[]): T[] => column.slice(column.length - rows)
@@ -238,7 +267,7 @@ export const register: Register = (on, options) => {
       <Box flexDirection="row" alignItems="flex-end" justifyContent="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="column" alignItems="flex-end">
           {fit(bubble).map((row, i) => (
-            <Text key={`bubble-${i}`} color={ORANGE} bold={current === 'sleeping'}>
+            <Text key={`bubble-${i}`} color={isAsleep ? Z_FADED : ORANGE} bold={!isAsleep}>
               {row || ' '}
             </Text>
           ))}
