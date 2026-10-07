@@ -26,9 +26,9 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface, ...CORNER } as never)
     expect(await texts(ui as never, /hi!/)).toBeDefined()
-    expect(await texts(ui as never, / █ █ █ █ /)).toBeDefined()
+    expect(await texts(ui as never, /█▀█▀█▀█/)).toBeDefined()
     expect(await texts(ui as never, /▐/)).toBeDefined()
-    expect(await texts(ui as never, /▀▀▀▀/)).toBeUndefined()
+    expect(await texts(ui as never, /^▀▀▀▀$/)).toBeUndefined()
     await ui.unmount()
   }
 
@@ -41,23 +41,27 @@ test('Clawd is awake with the laptop behind its back, then sleeps with Zzz when 
   }
 })
 
-test('asleep, Clawd breathes and Zs float up out of its head', async ($, on) => {
+test('asleep, Clawd lies still while Zs float up out of its head', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
   await clock.advance(61_000)
 
-  const frames: string[] = []
+  const bodies = new Set<string>()
+  const zFrames = new Set<string>()
   for (let i = 0; i < 16; i++) {
     await clock.advance(250)
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
-    const squashedLegs = await ui.find({ type: 'Text', text: /█▀█▀█▀█/ } as never)
-    const zs = (await ui.find({ type: 'Text', text: /^[·zZ]$/ } as never)) as unknown
-    frames.push(`${squashedLegs ? 'out' : 'in'}:${zs ? 'z' : '-'}`)
+    const head = (await ui.find({ type: 'Text', text: /▄▄▄▄▄▄▄/ } as never)) as { text?: string } | undefined
+    const legs = (await ui.find({ type: 'Text', text: /█▀█▀█▀█/ } as never)) as { text?: string } | undefined
+    const z = (await ui.find({ type: 'Text', text: /^[·zZ]$/ } as never)) as { text?: string } | undefined
+    bodies.add(`${head?.text}|${legs?.text}`)
+    expect(z).toBeDefined()
+    zFrames.add(String(z?.text))
     await ui.unmount()
   }
-  expect(frames.some(f => f.startsWith('out'))).toBe(true)
-  expect(frames.some(f => f.startsWith('in'))).toBe(true)
-  expect(frames.every(f => f.endsWith('z'))).toBe(true)
+  // One body shape the whole time; the Zs change.
+  expect(bodies.size).toBe(1)
+  expect(zFrames.size).toBeGreaterThan(1)
 })
 
 test('typing in the prompt wakes Clawd up', async ($, on) => {
@@ -92,10 +96,10 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
 
   await clock.advance(500)
   expect(await look(/got it!/)).toBeDefined()
-  expect(await look(/▀▀▀▀/)).toBeDefined()
+  expect(await look(/^▀▀▀▀$/)).toBeDefined()
 
   await clock.advance(1_000)
-  expect(await look(/▀▀▀▀/)).toBeDefined()
+  expect(await look(/^▀▀▀▀$/)).toBeDefined()
   expect(await look(/>/)).toBeDefined()
   expect(await look(/✻/)).toBeDefined()
 
@@ -112,8 +116,8 @@ test('when work starts Clawd pulls the laptop out from behind its back and types
 
   await clock.advance(2_000)
   expect(await look(/hi!/)).toBeDefined()
-  expect(await look(/▀▀▀▀/)).toBeUndefined()
-  expect(await look(/▄▄▄▄/)).toBeUndefined()
+  expect(await look(/^▀▀▀▀$/)).toBeUndefined()
+  expect(await look(/^▄▄▄▄$/)).toBeUndefined()
 })
 
 test('fits in three rows when the band has no fourth', async ($, on) => {
@@ -127,7 +131,7 @@ test('fits in three rows when the band has no fourth', async ($, on) => {
     props: { ...CORNER.props, maxRows: 3 },
   } as never)
   expect(await texts(ui as never, /hi!/)).toBeDefined()
-  expect(await texts(ui as never, / █ █ █ █ /)).toBeDefined()
+  expect(await texts(ui as never, /█▀█▀█▀█/)).toBeDefined()
   await ui.unmount()
 })
 
