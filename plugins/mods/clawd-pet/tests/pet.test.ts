@@ -13,6 +13,9 @@ const start = async ($: any, on: any) => {
   }))
   on('session.start', (_$: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
   on('turn.start', () => ({ turnId: 't1' }))
+  on('classic.UserPromptSubmit', () => ({}))
+  on('classic.PostToolUse', () => ({}))
+  on('classic.PostToolUseFailure', () => ({}))
   await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
 }
 
@@ -135,6 +138,75 @@ test('when work starts Clawd turns sideways, pulls out the laptop and types', as
   expect(await look(/╲/)).toBeUndefined()
   expect(await look(/^▀▀▀$/)).toBeUndefined()
   expect(await look(/^▄▄▄$/)).toBeUndefined()
+})
+
+test('in plan mode Clawd wears a hard hat and marches instead of opening the laptop', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await ($.classic as any).UserPromptSubmit({ prompt: 'plan the refactor', permission_mode: 'plan' })
+  await ($.turn as any).start({ text: 'plan the refactor' })
+
+  const look = async (pattern: RegExp) => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, pattern)
+    await ui.unmount()
+    return found
+  }
+
+  await clock.advance(3_000)
+  expect(await look(/planning/)).toBeDefined()
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined() // the brim
+  expect(await look(/╲/)).toBeUndefined() // no laptop out
+
+  // Marching: the legs change stance.
+  const stances = new Set<boolean>()
+  for (let i = 0; i < 4; i++) {
+    await clock.advance(250)
+    stances.add(Boolean(await look(/^ ▀█▀█▀█▀ $/)))
+  }
+  expect([...stances].sort()).toEqual([false, true])
+
+  // Out of plan mode the hat comes off and the laptop comes out again.
+  await ($.classic as any).UserPromptSubmit({ prompt: 'go', permission_mode: 'default' })
+  await clock.advance(3_000)
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
+  expect(await look(/╲/)).toBeDefined()
+})
+
+test('a failing command knocks Clawd out for a few seconds', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+
+  const look = async (pattern: RegExp) => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, pattern)
+    await ui.unmount()
+    return found
+  }
+
+  await ($.classic as any).PostToolUseFailure({
+    tool_name: 'Bash',
+    tool_input: { command: 'npm test' },
+    tool_use_id: 'toolu_1',
+    error: 'Exit code 1',
+  })
+  expect(await look(/oops!/)).toBeDefined()
+  expect(await look(/×/)).toBeDefined()
+
+  await clock.advance(3_500)
+  expect(await look(/oops!/)).toBeUndefined()
+  expect(await look(/hi!/)).toBeDefined()
+
+  // A failed edit is no code error, and an interrupt is not either.
+  await ($.classic as any).PostToolUseFailure({ tool_name: 'Edit', tool_input: {}, tool_use_id: 'toolu_2', error: 'no match' })
+  await ($.classic as any).PostToolUseFailure({
+    tool_name: 'Bash',
+    tool_input: {},
+    tool_use_id: 'toolu_3',
+    error: 'interrupted',
+    is_interrupt: true,
+  })
+  expect(await look(/oops!/)).toBeUndefined()
 })
 
 test('fits in three rows when the band has no fourth', async ($, on) => {
