@@ -14,6 +14,7 @@ const start = async ($: any, on: any) => {
   on('session.start', (_$: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
   on('turn.start', () => ({ turnId: 't1' }))
   on('classic.UserPromptSubmit', () => ({}))
+  on('prompt.attachment', (_$: unknown, e: { text: string }) => ({ text: e.text }))
   on('classic.PostToolUse', () => ({}))
   on('classic.PostToolUseFailure', () => ({}))
   await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
@@ -140,11 +141,25 @@ test('when work starts Clawd turns sideways, pulls out the laptop and types', as
   expect(await look(/^▄▄▄$/)).toBeUndefined()
 })
 
+// What the engine injects into a request: a plan-mode reminder or the note
+// that plan mode has ended.
+const planNote = ($: any, type: 'plan_mode' | 'plan_mode_exit', agentId?: string) =>
+  $.prompt.attachment({
+    type,
+    text: type === 'plan_mode' ? 'Plan mode is active.' : 'You have exited plan mode.',
+    origin: { kind: 'engine' },
+    ...(agentId === undefined ? {} : { agentId }),
+    detail:
+      type === 'plan_mode'
+        ? { reminder: 'full', planFilePath: '/tmp/plan.md', hasPlan: false }
+        : { planFilePath: '/tmp/plan.md', hasPlan: false },
+  })
+
 test('in plan mode Clawd wears a hard hat and marches instead of opening the laptop', async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)
-  await ($.classic as any).UserPromptSubmit({ prompt: 'plan the refactor', permission_mode: 'plan' })
   await ($.turn as any).start({ text: 'plan the refactor' })
+  await planNote($, 'plan_mode')
 
   const look = async (pattern: RegExp) => {
     const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
@@ -166,11 +181,36 @@ test('in plan mode Clawd wears a hard hat and marches instead of opening the lap
   }
   expect([...stances].sort()).toEqual([false, true])
 
-  // Out of plan mode the hat comes off and the laptop comes out again.
-  await ($.classic as any).UserPromptSubmit({ prompt: 'go', permission_mode: 'default' })
+  // A stale permission_mode on a settings-hook event does not take the hat off.
+  await ($.classic as any).UserPromptSubmit({ prompt: 'go on', permission_mode: 'default' })
+  await clock.advance(500)
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined()
+
+  // The engine's note that plan mode ended does: the laptop comes out again.
+  await planNote($, 'plan_mode_exit')
   await clock.advance(3_000)
   expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
   expect(await look(/╲/)).toBeDefined()
+})
+
+test('plan mode from a settings-hook event puts the hat on too', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await ($.classic as any).UserPromptSubmit({ prompt: 'plan it', permission_mode: 'plan' })
+  await clock.advance(500)
+  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+  expect(await texts(ui as never, /^▀▀▀▀▀▀▀$/)).toBeDefined()
+  await ui.unmount()
+})
+
+test("a subagent's plan-mode reminder does not put the hat on", async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await planNote($, 'plan_mode', 'agent-1')
+  await clock.advance(500)
+  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+  expect(await texts(ui as never, /^▀▀▀▀▀▀▀$/)).toBeUndefined()
+  await ui.unmount()
 })
 
 test('a failing command knocks Clawd out for a few seconds', async ($, on) => {
