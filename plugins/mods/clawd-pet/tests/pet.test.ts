@@ -240,3 +240,73 @@ test('gives the band back to a survey', async ($, on) => {
     .then(() => undefined, (err: Error) => err)
   expect(String(error)).toContain('no implementation for ui.render')
 })
+
+// The color Clawd's body is drawn in: the legs row's color.
+const bodyColor = async ($: any) => {
+  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER })
+  // Each row is an outer Text holding one Text per colored run.
+  const legs = (await ui.find({ type: 'Text', text: /█▀█▀█▀█/ })) as
+    | { children?: Array<{ props?: { color?: string } }> }
+    | undefined
+  await ui.unmount()
+  return legs?.children?.[0]?.props?.color
+}
+
+test('Clawd is orange by default', async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+  expect(await bodyColor($)).toBe('#E8713A')
+})
+
+test('the color picked in /config paints Clawd', { options: { color: 'azul' } }, async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+  expect(await bodyColor($)).toBe('#4A90E2')
+})
+
+test('a custom hex in /config wins over the picked color', { options: { color: 'azul', customColor: '#00BCD4' } }, async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+  expect(await bodyColor($)).toBe('#00bcd4') // stored lowercase
+})
+
+test('a malformed custom hex is ignored', { options: { color: 'verde', customColor: 'not a color' } }, async ($, on) => {
+  mock.clock(on)
+  await start($, on)
+  expect(await bodyColor($)).toBe('#4CAF50')
+})
+
+test('/pet color repaints Clawd now and saves the choice', async ($, on) => {
+  mock.clock(on)
+  const saved: Array<{ key: string; value: unknown }> = []
+  on('config.set', (_$, e) => {
+    saved.push({ key: e.key, value: e.value })
+    return { value: e.value }
+  })
+  await start($, on)
+  const pet = (args: string) =>
+    ($.command as any).run({ command: 'pet', args, origin: { kind: 'composer' }, presentation: {} }) as Promise<{ text?: string }>
+
+  // A palette name: saved as the pick, the custom hex cleared.
+  expect((await pet('color verde')).text).toContain('verde')
+  expect(await bodyColor($)).toBe('#4CAF50')
+  expect(saved).toEqual([
+    { key: 'clawd-pet.color', value: 'verde' },
+    { key: 'clawd-pet.customColor', value: '' },
+  ])
+
+  // A hex of the person's own, short form included: saved as the custom hex.
+  saved.length = 0
+  expect((await pet('color #0bc')).text).toContain('#00bbcc')
+  expect(await bodyColor($)).toBe('#00bbcc')
+  expect(saved).toEqual([{ key: 'clawd-pet.customColor', value: '#00bbcc' }])
+
+  // Something else: an explanation, nothing changed or saved.
+  saved.length = 0
+  expect((await pet('color sparkly')).text).toContain('not a color')
+  expect(await bodyColor($)).toBe('#00bbcc')
+  expect(saved).toEqual([])
+
+  // With no color, the list of colors.
+  expect((await pet('color')).text).toContain('naranja, azul')
+})

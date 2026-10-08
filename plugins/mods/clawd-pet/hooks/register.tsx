@@ -25,17 +25,63 @@ const SET_DOWN = 3 // set down closed on the ground in front of it
 const OPEN = 4 // opened sideways, the screen tilted back; Clawd types
 
 // Fixed colors, so Clawd stays vivid whatever the terminal theme.
-const ORANGE = '#E8713A'
+const DEFAULT_COLOR = 'naranja'
 const EYE_BLACK = '#000000'
 const LAPTOP_GREY = '#A8A8A8'
 const LAPTOP_DIM = '#5C5C5C'
 const SPARK_YELLOW = '#FFD166'
-const SLEEPY_EYE = '#8A3F1C'
 const Z_FADED = '#7A5A4A'
 const SCREEN_GLOW = '#CFE3F7'
 const SCREEN_DIM = '#8FB4DA'
 const HAT_YELLOW = '#E8B04B'
 const HAT_BADGE = '#B07A1E'
+
+// The colors Clawd can be, by the name the person picks in /config or types
+// after `/pet color`; any #RRGGBB (or #RGB) works too.
+const PALETTE: Record<string, string> = {
+  naranja: '#E8713A',
+  azul: '#4A90E2',
+  verde: '#4CAF50',
+  morado: '#9B59B6',
+  rosa: '#E86A9B',
+  rojo: '#E74C3C',
+  amarillo: '#F1C40F',
+  gris: '#95A5A6',
+}
+
+// The hex a color name or hex code stands for, as #RRGGBB, or undefined when
+// it is neither a palette name nor a well-formed hex code.
+function toHex(color: string): string | undefined {
+  const value = color.trim().toLowerCase()
+  const named = PALETTE[value]
+  if (named !== undefined) {
+    return named
+  }
+  const short = /^#?([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(value)
+  if (short) {
+    return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
+  }
+  const long = /^#?([0-9a-f]{6})$/.exec(value)
+  return long ? `#${long[1]}` : undefined
+}
+
+// The same color at 60% brightness: shut eyes are drawn in it, so they read
+// as a darker line on any body color.
+function darken(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const channel = (shift: number) => Math.round(((n >> shift) & 0xff) * 0.6)
+  return `#${[16, 8, 0].map(shift => channel(shift).toString(16).padStart(2, '0')).join('')}`
+}
+
+// Clawd's body color and its darker shade, set from the person's choice when
+// the module loads (and again when they change it with /pet color).
+let BODY = PALETTE[DEFAULT_COLOR] ?? '#E8713A'
+let BODY_DARK = darken(BODY)
+
+function paint(hex: string) {
+  BODY = hex
+  BODY_DARK = darken(hex)
+}
 
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
@@ -57,11 +103,11 @@ type Seg = { text: string; color?: string; backgroundColor?: string; bold?: bool
 type Eyes = 'open' | 'blink' | 'asleep'
 
 function petRows(eyes: Eyes): Seg[][] {
-  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
+  const body = (text: string): Seg => ({ text, color: BODY, bold: true })
   const eye: Seg =
     eyes === 'open'
-      ? { text: '▀', color: EYE_BLACK, backgroundColor: ORANGE }
-      : { text: '▀', color: SLEEPY_EYE, backgroundColor: ORANGE }
+      ? { text: '▀', color: EYE_BLACK, backgroundColor: BODY }
+      : { text: '▀', color: BODY_DARK, backgroundColor: BODY }
 
   return [
     [body(' ▄▄▄▄▄▄▄ ')],
@@ -82,8 +128,8 @@ function petRows(eyes: Eyes): Seg[][] {
 //
 // Typing, the front arm drops one pixel onto the keys and back up.
 function sidePetRows(isArmDown: boolean): Seg[][] {
-  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
-  const eye: Seg = { text: '▀', color: EYE_BLACK, backgroundColor: ORANGE }
+  const body = (text: string): Seg => ({ text, color: BODY, bold: true })
+  const eye: Seg = { text: '▀', color: EYE_BLACK, backgroundColor: BODY }
 
   return [
     [body(' ▄▄▄▄▄▄▄ ')],
@@ -146,7 +192,7 @@ function hatRow(): Seg[] {
 function brimRow(): Seg[] {
   return [
     { text: '▀', color: HAT_YELLOW, bold: true },
-    { text: '▀▀▀▀▀▀▀', color: HAT_YELLOW, backgroundColor: ORANGE, bold: true },
+    { text: '▀▀▀▀▀▀▀', color: HAT_YELLOW, backgroundColor: BODY, bold: true },
     { text: '▀', color: HAT_YELLOW, bold: true },
   ]
 }
@@ -155,7 +201,7 @@ function brimRow(): Seg[] {
 // legs step between two stances every half second.
 function marchingLegs(tick: number): Seg[] {
   const legs = Math.floor(tick / 2) % 2 === 0 ? ' █▀█▀█▀█ ' : ' ▀█▀█▀█▀ '
-  return [{ text: legs, color: ORANGE, bold: true }]
+  return [{ text: legs, color: BODY, bold: true }]
 }
 
 // Knocked out after a command fails: Clawd lies flat on its back, its legs
@@ -167,8 +213,8 @@ function marchingLegs(tick: number): Seg[] {
 //   # # X # # # X # #     flat body
 //   # # # # # # # # #
 function knockedOutRows(): Seg[][] {
-  const body = (text: string): Seg => ({ text, color: ORANGE, bold: true })
-  const eye: Seg = { text: '×', color: EYE_BLACK, backgroundColor: ORANGE, bold: true }
+  const body = (text: string): Seg => ({ text, color: BODY, bold: true })
+  const eye: Seg = { text: '×', color: EYE_BLACK, backgroundColor: BODY, bold: true }
   return [
     [body(' ▄ ▄ ▄ ▄ ')],
     [body('██'), eye, body('███'), eye, body('██')],
@@ -189,7 +235,7 @@ const SPARKS = ['  ✻  ', ' · ✻ ', '✻  · ', ' ✻  ·']
 function sparkRow(tick: number): Seg[] {
   const sparks = SPARKS[tick % SPARKS.length] ?? ''
   return [...sparks].map(ch =>
-    ch === '✻' ? { text: ch, color: ORANGE, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch },
+    ch === '✻' ? { text: ch, color: BODY, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch },
   )
 }
 
@@ -207,7 +253,7 @@ function sleepRow(tick: number): Seg[] {
     const age = (beat + offset) % Z_CYCLE
     const shape = Z_SHAPES[age]
     if (shape !== undefined) {
-      cells[4 + age] = { text: shape, color: age === Z_SHAPES.length - 1 ? Z_FADED : ORANGE, bold: age >= 3 }
+      cells[4 + age] = { text: shape, color: age === Z_SHAPES.length - 1 ? Z_FADED : BODY, bold: age >= 3 }
     }
   }
   return cells
@@ -246,6 +292,9 @@ async function notePermissionMode($: EngineInterface, permissionMode: string | u
 
 export const register: Register = (on, options) => {
   const idleMs = Math.max(5, Number(options.idleSeconds ?? 60)) * 1000
+  // A custom hex in /config wins over the palette pick; a malformed one is
+  // ignored and the pick is used.
+  paint(toHex(String(options.customColor ?? '')) ?? toHex(String(options.color ?? DEFAULT_COLOR)) ?? BODY)
   const c: Clock = { lastActivityAt: 0, isTurnRunning: false, errorUntil: 0, idleMs }
 
   on('session.start', async ($, e, next) => {
@@ -273,16 +322,51 @@ export const register: Register = (on, options) => {
     try {
       await $.command.register({
         name: 'pet',
-        description: 'Show or hide Clawd, the Claude pet above the prompt.',
+        description: 'Show or hide Clawd, the Claude pet above the prompt; /pet color changes its color.',
+        argumentHint: '[color <name|#hex>]',
       })
     } catch {}
 
     return next(e)
   })
 
-  on('command.run', { command: 'pet' }, async $ => {
-    const hidden = await update($, isHidden, h => !h)
-    return { text: hidden ? 'Clawd went home. Run /pet to bring it back.' : 'Clawd is back!' }
+  // `/pet` shows or hides Clawd; `/pet color` lists the colors; `/pet color
+  // <name|#hex>` repaints it now and saves the choice in the plugin's /config
+  // options (a name in "color", a hex in "customColor"), so it lasts.
+  on('command.run', { command: 'pet' }, async ($, e) => {
+    const [sub, ...rest] = e.args.trim().split(/\s+/)
+    if (sub !== 'color') {
+      const hidden = await update($, isHidden, h => !h)
+      return { text: hidden ? 'Clawd went home. Run /pet to bring it back.' : 'Clawd is back!' }
+    }
+
+    const names = Object.keys(PALETTE).join(', ')
+    const wanted = rest.join(' ')
+    if (wanted === '') {
+      return { text: `Clawd's colors: ${names}, or any hex like #00BCD4. Now: ${BODY}.` }
+    }
+
+    const hex = toHex(wanted)
+    if (hex === undefined) {
+      return { text: `"${wanted}" is not a color I know. Use one of: ${names}, or a hex like #00BCD4.` }
+    }
+
+    paint(hex)
+    const name = wanted.trim().toLowerCase()
+    const saves =
+      PALETTE[name] !== undefined
+        ? [
+            { key: 'clawd-pet.color', value: name },
+            { key: 'clawd-pet.customColor', value: '' },
+          ]
+        : [{ key: 'clawd-pet.customColor', value: hex }]
+    for (const save of saves) {
+      const { deny } = await $.config.set(save)
+      if (deny !== undefined) {
+        return { text: `Clawd is ${hex} for now, but the color could not be saved: ${deny}` }
+      }
+    }
+    return { text: `Clawd is now ${PALETTE[name] !== undefined ? name : hex}.` }
   })
 
   // Anything the person does in the prompt box wakes Clawd up.
@@ -429,7 +513,7 @@ export const register: Register = (on, options) => {
       <Box flexDirection="row" alignItems="flex-end" justifyContent="flex-end" width={e.props.bodyColumns}>
         <Box flexDirection="column" alignItems="flex-end">
           {fit(bubble).map((row, i) => (
-            <Text key={`bubble-${i}`} color={isAsleep ? Z_FADED : ORANGE} bold={!isAsleep}>
+            <Text key={`bubble-${i}`} color={isAsleep ? Z_FADED : BODY} bold={!isAsleep}>
               {row || ' '}
             </Text>
           ))}
