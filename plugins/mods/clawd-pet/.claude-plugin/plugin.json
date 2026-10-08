@@ -1,8 +1,10 @@
 {
   "name": "clawd-pet",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Clawd, the Claude pet, sits right above your prompt, on the right, with its laptop: it types while Claude works and falls asleep (Zzz) when you are idle.",
-  "author": { "name": "Menendez2004" },
+  "author": {
+    "name": "Menendez2004"
+  },
   "types": "./types/index.d.ts",
   "userConfig": {
     "idleSeconds": {
@@ -10,6 +12,28 @@
       "title": "Seconds before the pet falls asleep",
       "description": "How long with no typing and no running turn before Clawd goes to sleep.",
       "default": 60
+    },
+    "color": {
+      "type": "string",
+      "title": "Clawd's color",
+      "description": "Pick a color for Clawd. To use your own, fill in \"Custom color\" below.",
+      "options": [
+        "naranja",
+        "azul",
+        "verde",
+        "morado",
+        "rosa",
+        "rojo",
+        "amarillo",
+        "gris"
+      ],
+      "default": "naranja"
+    },
+    "customColor": {
+      "type": "string",
+      "title": "Custom color",
+      "description": "Any hex color, like #00BCD4. When filled in it wins over the color picked above; leave it empty to use that one.",
+      "default": ""
     }
   }
 }
