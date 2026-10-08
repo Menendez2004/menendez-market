@@ -25,7 +25,7 @@ const SET_DOWN = 3 // set down closed on the ground in front of it
 const OPEN = 4 // opened sideways, the screen tilted back; Clawd types
 
 // Fixed colors, so Clawd stays vivid whatever the terminal theme.
-const DEFAULT_COLOR = 'naranja'
+const DEFAULT_COLOR = 'orange'
 const EYE_BLACK = '#000000'
 const LAPTOP_GREY = '#A8A8A8'
 const LAPTOP_DIM = '#5C5C5C'
@@ -39,14 +39,14 @@ const HAT_BADGE = '#B07A1E'
 // The colors Clawd can be, by the name the person picks in /config or types
 // after `/pet color`; any #RRGGBB (or #RGB) works too.
 const PALETTE: Record<string, string> = {
-  naranja: '#E8713A',
-  azul: '#4A90E2',
-  verde: '#4CAF50',
-  morado: '#9B59B6',
-  rosa: '#E86A9B',
-  rojo: '#E74C3C',
-  amarillo: '#F1C40F',
-  gris: '#95A5A6',
+  orange: '#E8713A',
+  blue: '#4A90E2',
+  green: '#4CAF50',
+  purple: '#9B59B6',
+  pink: '#E86A9B',
+  red: '#E74C3C',
+  yellow: '#F1C40F',
+  gray: '#95A5A6',
 }
 
 // The hex a color name or hex code stands for, as #RRGGBB, or undefined when
