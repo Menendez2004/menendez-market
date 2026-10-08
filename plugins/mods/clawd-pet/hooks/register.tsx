@@ -283,7 +283,9 @@ async function moodNow($: EngineInterface, c: Clock): Promise<PetMood> {
   return now - c.lastActivityAt >= c.idleMs ? 'sleeping' : 'awake'
 }
 
-// Plan mode comes in on the settings-hook events as `permission_mode`.
+// Records whether plan mode is on. The engine's plan-mode notes switch it
+// both ways; the settings-hook events' `permission_mode` only ever switches it
+// on, so a field they leave stale cannot take the hat off mid-plan.
 async function notePermissionMode($: EngineInterface, permissionMode: string | undefined) {
   if (permissionMode !== undefined && (await read($, isPlanMode)) !== (permissionMode === 'plan')) {
     await update($, isPlanMode, () => permissionMode === 'plan')
@@ -398,12 +400,42 @@ export const register: Register = (on, options) => {
   })
 
   on('classic.UserPromptSubmit', async ($, e, next) => {
-    await notePermissionMode($, e.permission_mode)
+    if (e.permission_mode === 'plan') {
+      await notePermissionMode($, 'plan')
+    }
     return next(e)
   })
 
   on('classic.PostToolUse', async ($, e, next) => {
-    await notePermissionMode($, e.permission_mode)
+    if (e.permission_mode === 'plan') {
+      await notePermissionMode($, 'plan')
+    }
+    return next(e)
+  })
+
+  // The engine's own record of plan mode: while it is on, every request of
+  // the main conversation carries a `plan_mode` reminder (and a
+  // `plan_mode_reentry` note when Claude goes back into it); when it ends, a
+  // `plan_mode_exit` note is made once. A subagent's rows are left out: only
+  // the main conversation's mode puts the hat on.
+  on('prompt.attachment', { type: 'plan_mode' }, async ($, e, next) => {
+    if (e.agentId === undefined) {
+      await notePermissionMode($, 'plan')
+    }
+    return next(e)
+  })
+
+  on('prompt.attachment', { type: 'plan_mode_reentry' }, async ($, e, next) => {
+    if (e.agentId === undefined) {
+      await notePermissionMode($, 'plan')
+    }
+    return next(e)
+  })
+
+  on('prompt.attachment', { type: 'plan_mode_exit' }, async ($, e, next) => {
+    if (e.agentId === undefined) {
+      await notePermissionMode($, 'default')
+    }
     return next(e)
   })
 
@@ -427,7 +459,9 @@ export const register: Register = (on, options) => {
   // A failing command (a build, a test run, a script) knocks Clawd out for a
   // few seconds; an interrupt does not count.
   on('classic.PostToolUseFailure', async ($, e, next) => {
-    await notePermissionMode($, e.permission_mode)
+    if (e.permission_mode === 'plan') {
+      await notePermissionMode($, 'plan')
+    }
     if (e.tool_name === 'Bash' && !e.is_interrupt) {
       c.errorUntil = (await $.clock.now()) + ERROR_MS
       await setMood($, 'error')
