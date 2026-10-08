@@ -258,19 +258,19 @@ test('Clawd is orange by default', async ($, on) => {
   expect(await bodyColor($)).toBe('#E8713A')
 })
 
-test('the color picked in /config paints Clawd', { options: { color: 'azul' } }, async ($, on) => {
+test('the color picked in /config paints Clawd', { options: { color: 'blue' } }, async ($, on) => {
   mock.clock(on)
   await start($, on)
   expect(await bodyColor($)).toBe('#4A90E2')
 })
 
-test('a custom hex in /config wins over the picked color', { options: { color: 'azul', customColor: '#00BCD4' } }, async ($, on) => {
+test('a custom hex in /config wins over the picked color', { options: { color: 'blue', customColor: '#00BCD4' } }, async ($, on) => {
   mock.clock(on)
   await start($, on)
   expect(await bodyColor($)).toBe('#00bcd4') // stored lowercase
 })
 
-test('a malformed custom hex is ignored', { options: { color: 'verde', customColor: 'not a color' } }, async ($, on) => {
+test('a malformed custom hex is ignored', { options: { color: 'green', customColor: 'not a color' } }, async ($, on) => {
   mock.clock(on)
   await start($, on)
   expect(await bodyColor($)).toBe('#4CAF50')
@@ -288,10 +288,10 @@ test('/pet color repaints Clawd now and saves the choice', async ($, on) => {
     ($.command as any).run({ command: 'pet', args, origin: { kind: 'composer' }, presentation: {} }) as Promise<{ text?: string }>
 
   // A palette name: saved as the pick, the custom hex cleared.
-  expect((await pet('color verde')).text).toContain('verde')
+  expect((await pet('color green')).text).toContain('green')
   expect(await bodyColor($)).toBe('#4CAF50')
   expect(saved).toEqual([
-    { key: 'clawd-pet.color', value: 'verde' },
+    { key: 'clawd-pet.color', value: 'green' },
     { key: 'clawd-pet.customColor', value: '' },
   ])
 
@@ -308,5 +308,5 @@ test('/pet color repaints Clawd now and saves the choice', async ($, on) => {
   expect(saved).toEqual([])
 
   // With no color, the list of colors.
-  expect((await pet('color')).text).toContain('naranja, azul')
+  expect((await pet('color')).text).toContain('orange, blue')
 })
