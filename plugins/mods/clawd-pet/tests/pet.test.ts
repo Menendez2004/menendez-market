@@ -203,6 +203,79 @@ test('plan mode from a settings-hook event puts the hat on too', async ($, on) =
   await ui.unmount()
 })
 
+// Draws the footer under the prompt with this hint, as the engine does on
+// every change. Nothing beneath the plugins draws it in a test, so the mount
+// itself rejects once the plugin has read the line.
+const showFooter = ($: any, hint: string) =>
+  $.ui
+    .mount({
+      plugin: 'clawd-pet',
+      surface: 'terminal',
+      component: 'PromptHint',
+      props: { isDraft: false, isWorking: false, hint },
+    })
+    .then((ui: { unmount: () => Promise<void> }) => ui.unmount(), () => undefined)
+
+test('Shift+Tab into plan mode puts the hat on at once, and out of it takes it off', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  const hasHat = async () => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const brim = await texts(ui as never, /^▀▀▀▀▀▀▀$/)
+    await ui.unmount()
+    return brim !== undefined
+  }
+
+  // A footer that says nothing of plan mode changes nothing.
+  await showFooter($, '? for shortcuts')
+  await clock.advance(500)
+  expect(await hasHat()).toBe(false)
+
+  // No prompt sent: the footer alone puts the hat on...
+  await showFooter($, '⏸ plan mode on (shift+tab to cycle)')
+  await clock.advance(500)
+  expect(await hasHat()).toBe(true)
+
+  // ...and takes it off when Shift+Tab moves on.
+  await showFooter($, '⏵⏵ accept edits on (shift+tab to cycle)')
+  await clock.advance(500)
+  expect(await hasHat()).toBe(false)
+})
+
+test('Claude plans with its Plan subagent: hard hat on while it runs', async ($, on) => {
+  const clock = mock.clock(on)
+  // The Plan agent takes two seconds to answer.
+  on('tool.call', async () => {
+    await clock.sleep(2_000)
+    return { result: { status: 'completed' }, text: 'the plan' }
+  })
+  await start($, on)
+  await ($.turn as any).start({ text: 'plan how to add dark mode' })
+
+  const look = async (pattern: RegExp) => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, pattern)
+    await ui.unmount()
+    return found
+  }
+
+  const call = ($.tool as any).call({
+    tool: 'Agent',
+    description: 'Plan dark mode',
+    prompt: 'Plan how to add dark mode',
+    subagent_type: 'Plan',
+  })
+  await clock.advance(750)
+  expect(await look(/planning/)).toBeDefined()
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined()
+
+  await clock.advance(1_500)
+  await call
+  await clock.advance(500)
+  expect(await look(/planning/)).toBeUndefined()
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
+})
+
 test("a subagent's plan-mode reminder does not put the hat on", async ($, on) => {
   const clock = mock.clock(on)
   await start($, on)

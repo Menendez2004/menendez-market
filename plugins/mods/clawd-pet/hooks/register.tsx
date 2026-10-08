@@ -267,7 +267,19 @@ async function setMood($: EngineInterface, next: PetMood) {
 }
 
 // What moodNow needs to know beyond the plugin's state.
-type Clock = { lastActivityAt: number; isTurnRunning: boolean; errorUntil: number; idleMs: number }
+type Clock = {
+  lastActivityAt: number
+  isTurnRunning: boolean
+  errorUntil: number
+  idleMs: number
+  // How many Plan subagents are running: Claude planning without plan mode.
+  planAgents: number
+  // What the footer under the prompt last said about plan mode, and what of
+  // it the plugin has already recorded (see the PromptHint hook).
+  footerSaysPlan: boolean
+  footerEverSaidPlan: boolean
+  footerApplied: boolean | undefined
+}
 
 // Clawd's mood right now: knocked out for a few seconds after a failed
 // command, planning or working while a turn runs, asleep once the person has
@@ -278,7 +290,7 @@ async function moodNow($: EngineInterface, c: Clock): Promise<PetMood> {
     return 'error'
   }
   if (c.isTurnRunning) {
-    return (await read($, isPlanMode)) ? 'planning' : 'working'
+    return c.planAgents > 0 || (await read($, isPlanMode)) ? 'planning' : 'working'
   }
   return now - c.lastActivityAt >= c.idleMs ? 'sleeping' : 'awake'
 }
@@ -297,13 +309,30 @@ export const register: Register = (on, options) => {
   // A custom hex in /config wins over the palette pick; a malformed one is
   // ignored and the pick is used.
   paint(toHex(String(options.customColor ?? '')) ?? toHex(String(options.color ?? DEFAULT_COLOR)) ?? BODY)
-  const c: Clock = { lastActivityAt: 0, isTurnRunning: false, errorUntil: 0, idleMs }
+  const c: Clock = {
+    lastActivityAt: 0,
+    isTurnRunning: false,
+    errorUntil: 0,
+    idleMs,
+    planAgents: 0,
+    footerSaysPlan: false,
+    footerEverSaidPlan: false,
+    footerApplied: undefined,
+  }
 
   on('session.start', async ($, e, next) => {
     c.lastActivityAt = await $.clock.now()
     await update($, mood, () => 'awake')
 
     $.clock.every(TICK_MS, async () => {
+      // Shift+Tab: the footer is the first to show the mode changed. Its word
+      // is recorded once each time it changes; it only switches plan mode off
+      // once it has been seen saying it is on, so a footer that never shows
+      // the mode leaves the other signals in charge.
+      if (c.footerApplied !== c.footerSaysPlan && (c.footerSaysPlan || c.footerEverSaidPlan)) {
+        await notePermissionMode($, c.footerSaysPlan ? 'plan' : 'default')
+        c.footerApplied = c.footerSaysPlan
+      }
       const current = await moodNow($, c)
       await setMood($, current)
       if ((await read($, frame)) % 2 === 0) {
@@ -454,6 +483,29 @@ export const register: Register = (on, options) => {
       await update($, isPlanMode, () => false)
     }
     return result
+  })
+
+  // Asked to plan, Claude may hand the work to its Plan subagent without
+  // entering plan mode: Clawd plans (hard hat on) while that agent runs.
+  on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
+    if (e.subagent_type !== 'Plan') {
+      return next(e)
+    }
+    c.planAgents += 1
+    try {
+      return await next(e)
+    } finally {
+      c.planAgents -= 1
+    }
+  })
+
+  // The footer under the prompt says "plan mode on" while plan mode is on, the
+  // moment Shift+Tab switches it. A drawing never writes state, so this only
+  // notes what the line says; the timer records it.
+  on('ui.render', { component: 'PromptHint' }, ($, e, next) => {
+    c.footerSaysPlan = /plan mode on/i.test(e.props.hint)
+    c.footerEverSaidPlan = c.footerEverSaidPlan || c.footerSaysPlan
+    return next(e)
   })
 
   // A failing command (a build, a test run, a script) knocks Clawd out for a
