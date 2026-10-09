@@ -66,6 +66,10 @@ step number and short name from your brief.
   rename it to .dev/tasks/step-<N>-<short-name>.result.md (mv). Never write
   the .result.md path directly. If the Lead later answers an escalation
   here and you continue, replace the result the same way.
+- Renaming the result is your last action: end your turn right after it.
+  A terminal session closes by itself once its result says Complete or
+  Failed, so anything you do after that is cut off. A Blocked session stays
+  open for the Lead.
 
 ## Result format
 
