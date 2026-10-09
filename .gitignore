@@ -1,3 +1,5 @@
 # Written by Claude Code when it loads a mod from its folder (--plugin-dir)
 plugins/mods/*/.claude-plugin/types/
 plugins/mods/*/tsconfig.json
+__pycache__/
+*.pyc
