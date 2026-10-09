@@ -1,7 +1,7 @@
 {
   "name": "clawd-pet",
-  "version": "1.10.0",
-  "description": "Clawd, the Claude pet, sits right above your prompt, on the right, with its laptop: it types while Claude works and falls asleep (Zzz) when you are idle.",
+  "version": "1.11.0",
+  "description": "Clawd, the Claude pet, sits right above your prompt, on the right, with its laptop: it types while Claude works, brings a helper per running subagent (glasses for research, hard hat for planning, laptop for coding) and falls asleep (Zzz) when you are idle.",
   "author": {
     "name": "Menendez2004"
   },
