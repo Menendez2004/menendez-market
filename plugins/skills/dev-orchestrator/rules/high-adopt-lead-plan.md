@@ -41,7 +41,7 @@ Lead's.
   the plan. Adopt, validate, move on to the mandatory pause.
 - Validation finds gaps; it never fixes them silently. Every change to the
   plan comes from the Lead.
-- Draft a plan in plan mode under `opusplan` **only** when no plan was
+- Have the Planner Agent (`orch-planner`, Opus) draft a plan **only** when no plan was
   provided and the task is complex, and treat it as a draft until the Lead
   approves.
 

@@ -28,9 +28,11 @@ the step Blocked and escalates to the Lead to split the plan.
 
 **Limits:**
 
-- Level 0 -- Orchestrator: launches Task Agents (in terminals, or inline for
-  small steps) and its own Research Sub-agents. Nothing else spawns Task
-  Agents.
+- Level 0 -- Orchestrator: launches the Planner Agent (only when no plan is
+  given), Task Agents (in terminals, or inline for small steps) and its own
+  Research Sub-agents. Nothing else spawns Task Agents or the Planner.
+- Level 1 -- Planner Agent: read-only, spawns nothing, returns a draft and
+  ends (`dev-orchestrator:orch-planner`, which has no Agent tool).
 - Level 1 -- Task Agent: may spawn Research Sub-agents only. Never another
   Task Agent, never a new terminal, never a writing sub-agent.
 - Level 2 -- Research Sub-agent: spawns nothing.
