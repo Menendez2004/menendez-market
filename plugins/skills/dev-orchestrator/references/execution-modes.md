@@ -52,8 +52,8 @@ Two options -- pick the one that fits, or offer both to the Lead:
 
 - **Deploy the Planner Agent (default).** Spawn
   `dev-orchestrator:orch-planner` with the inline `Agent` tool and no
-  `model` parameter. It runs on Opus with read-only tools (the plan-mode
-  half of `opusplan`), uses graphify first when available, and returns a
+  `model` parameter. It runs on Opus with read-only tools (so it behaves as
+  plan mode), uses graphify first when available, and returns a
   numbered plan with per-step `Writes`/`Reads`/`Needs`, hotspots, and open
   questions for the Lead. The Orchestrator never drafts the plan itself. In
   other harnesses, use the strongest configured model and note which one

@@ -59,7 +59,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 ### Task Agent (Level 1)
 
 - An independent, full CLI session running in its own terminal named
-  `orch-s[N]-[short-name]`, on the latest Sonnet (`claude --model sonnet`).
+  `orch-s[N]-[short-name]`, on the latest Opus (`claude --model opus`).
   Small steps can instead run as an **inline** Task Agent in the
   Orchestrator's session, with the same brief and rules but no terminal and
   no Research Sub-agents (`references/terminal-launch.md` section 6).

@@ -7,7 +7,7 @@ description: >-
   plan mode, or asks for any multi-step dev task. Human-in-the-loop
   orchestrator: adopts the Lead's plan, or has the read-only orch-planner
   agent (Opus) draft one when none is given; maps step dependencies, then
-  runs the steps itself or through Task Agents (latest Sonnet) in their own
+  runs the steps itself or through Task Agents (latest Opus) in their own
   terminals and git worktrees, with read-only Research Sub-agents (Sonnet 5)
   below them (max 2 levels). Never runs tests, never guesses, never touches
   git: escalates to the Lead. Also for "orchestrate this", "use
@@ -17,7 +17,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 10
+  version: 11
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -65,8 +65,9 @@ The hierarchy is capped at **2 levels below you**. Nothing below Level 2
 exists.
 
 Each role has a fixed model: **planning** on Opus (the `orch-planner`
-agent: read-only, so it is the plan-mode half of `opusplan`), **execution**
-with the latest Sonnet (Task Agents, `claude --model sonnet`), and
+agent: read-only, so it behaves as plan mode), **execution** with the
+latest Opus (Task Agents, `claude --model opus`; in single-session mode the
+Orchestrator session itself, so run it with `/model opus`), and
 **research** with Sonnet 5 (Research Sub-agents, pinned in the
 `orch-researcher` agent as `claude-sonnet-5-5`). How to set each:
 `references/models.md`. Full roles, permissions and briefing templates:
@@ -212,7 +213,7 @@ ordering constraints.
      `references/agent-hierarchy.md`.
   2. **terminal** steps: open a new tab/window/pane in the terminal the user
      is using, named exactly `orch-s[N]-[short-name]` (kebab-case, e.g.
-     `orch-s2-ratelimit`), and start `claude --model sonnet` in the step's
+     `orch-s2-ratelimit`), and start `claude --model opus` in the step's
      worktree on the brief, with `--add-dir <ROOT>/.dev`.
      **inline** steps: start the Task Agent with the inline `Agent` tool on
      the same brief, told to work only inside its worktree. See
