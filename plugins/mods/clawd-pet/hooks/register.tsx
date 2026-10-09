@@ -1,13 +1,14 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { PetMood } from '../types'
+import type { Helper, HelperKind, PetMood } from '../types'
 
 const mood = atom({ plugin: 'clawd-pet', key: 'mood' } as const, 'awake')
 const frame = atom({ plugin: 'clawd-pet', key: 'frame' } as const, 0)
 const isHidden = atom({ plugin: 'clawd-pet', key: 'isHidden' } as const, false)
 const laptopStep = atom({ plugin: 'clawd-pet', key: 'laptopStep' } as const, 0)
 const isPlanMode = atom({ plugin: 'clawd-pet', key: 'isPlanMode' } as const, false)
+const helpers = atom({ plugin: 'clawd-pet', key: 'helpers' } as const, [] as Helper[])
 
 // How long Clawd stays knocked out after a command fails.
 const ERROR_MS = 3000
@@ -35,6 +36,11 @@ const SCREEN_GLOW = '#CFE3F7'
 const SCREEN_DIM = '#8FB4DA'
 const HAT_YELLOW = '#E8B04B'
 const HAT_BADGE = '#B07A1E'
+const GLASSES = '#1E1E1E'
+const THINK_BLUE = '#7FB8F0'
+
+// At most this many helpers stand next to Clawd; the rest show as "+N".
+const MAX_HELPERS = 3
 
 // The colors Clawd can be, by the name the person picks in /config or types
 // after `/pet color`; any #RRGGBB (or #RGB) works too.
@@ -83,6 +89,23 @@ function paint(hex: string) {
   BODY_DARK = darken(hex)
 }
 
+// The same color mixed 45% toward white: the helpers Clawd's subagents bring
+// along are drawn in it, so they read as Clawd's kin and never as Clawd.
+function lighten(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const channel = (shift: number) => Math.round(((n >> shift) & 0xff) * 0.55 + 255 * 0.45)
+  return `#${[16, 8, 0].map(shift => channel(shift).toString(16).padStart(2, '0')).join('')}`
+}
+
+// The colors a pet is drawn in: Clawd's own, or a helper's lighter ones.
+type Tone = { body: string; dark: string }
+
+const clawdTone = (): Tone => ({ body: BODY, dark: BODY_DARK })
+const helperTone = (): Tone => {
+  const body = lighten(BODY)
+  return { body, dark: darken(body) }
+}
+
 // One run of characters in a single style.
 type Seg = { text: string; color?: string; backgroundColor?: string; bold?: boolean }
 
@@ -102,12 +125,12 @@ type Seg = { text: string; color?: string; backgroundColor?: string; bold?: bool
 // turns sideways (below).
 type Eyes = 'open' | 'blink' | 'asleep'
 
-function petRows(eyes: Eyes): Seg[][] {
-  const body = (text: string): Seg => ({ text, color: BODY, bold: true })
+function petRows(eyes: Eyes, tone: Tone = clawdTone()): Seg[][] {
+  const body = (text: string): Seg => ({ text, color: tone.body, bold: true })
   const eye: Seg =
     eyes === 'open'
-      ? { text: '▀', color: EYE_BLACK, backgroundColor: BODY }
-      : { text: '▀', color: BODY_DARK, backgroundColor: BODY }
+      ? { text: '▀', color: EYE_BLACK, backgroundColor: tone.body }
+      : { text: '▀', color: tone.dark, backgroundColor: tone.body }
 
   return [
     [body(' ▄▄▄▄▄▄▄ ')],
@@ -127,9 +150,9 @@ function petRows(eyes: Eyes): Seg[][] {
 //   . # . # . # . # .     row 4  legs
 //
 // Typing, the front arm drops one pixel onto the keys and back up.
-function sidePetRows(isArmDown: boolean): Seg[][] {
-  const body = (text: string): Seg => ({ text, color: BODY, bold: true })
-  const eye: Seg = { text: '▀', color: EYE_BLACK, backgroundColor: BODY }
+function sidePetRows(isArmDown: boolean, tone: Tone = clawdTone()): Seg[][] {
+  const body = (text: string): Seg => ({ text, color: tone.body, bold: true })
+  const eye: Seg = { text: '▀', color: EYE_BLACK, backgroundColor: tone.body }
 
   return [
     [body(' ▄▄▄▄▄▄▄ ')],
@@ -189,19 +212,19 @@ function hatRow(): Seg[] {
   return [{ text: '  ' }, hat('▄▄'), hat('▄', HAT_BADGE), hat('▄▄'), { text: '  ' }]
 }
 
-function brimRow(): Seg[] {
+function brimRow(tone: Tone = clawdTone()): Seg[] {
   return [
     { text: '▀', color: HAT_YELLOW, bold: true },
-    { text: '▀▀▀▀▀▀▀', color: HAT_YELLOW, backgroundColor: BODY, bold: true },
+    { text: '▀▀▀▀▀▀▀', color: HAT_YELLOW, backgroundColor: tone.body, bold: true },
     { text: '▀', color: HAT_YELLOW, bold: true },
   ]
 }
 
 // Planning, Clawd faces you under its hard hat and marches in place: its
 // legs step between two stances every half second.
-function marchingLegs(tick: number): Seg[] {
+function marchingLegs(tick: number, tone: Tone = clawdTone()): Seg[] {
   const legs = Math.floor(tick / 2) % 2 === 0 ? ' █▀█▀█▀█ ' : ' ▀█▀█▀█▀ '
-  return [{ text: legs, color: BODY, bold: true }]
+  return [{ text: legs, color: tone.body, bold: true }]
 }
 
 // Knocked out after a command fails: Clawd lies flat on its back, its legs
@@ -232,10 +255,10 @@ function starRow(tick: number): Seg[] {
 // tick, in the row above the laptop and as wide as it.
 const SPARKS = ['  ✻  ', ' · ✻ ', '✻  · ', ' ✻  ·']
 
-function sparkRow(tick: number): Seg[] {
+function sparkRow(tick: number, tone: Tone = clawdTone()): Seg[] {
   const sparks = SPARKS[tick % SPARKS.length] ?? ''
   return [...sparks].map(ch =>
-    ch === '✻' ? { text: ch, color: BODY, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch },
+    ch === '✻' ? { text: ch, color: tone.body, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch },
   )
 }
 
@@ -259,10 +282,71 @@ function sleepRow(tick: number): Seg[] {
   return cells
 }
 
+// What kind of helper a subagent type brings: researchers (Explore, a
+// research or search agent, the docs guide) wear glasses, planners (Plan, a
+// planner) the hard hat, and everyone else codes on a laptop.
+function helperKind(subagentType: string): HelperKind {
+  const type = subagentType.toLowerCase()
+  if (/explore|research|search|guide/.test(type)) {
+    return 'research'
+  }
+  if (/plan/.test(type)) {
+    return 'plan'
+  }
+  return 'code'
+}
+
+// A researcher's face: round glasses over both eyes, joined by a bridge, the
+// eyes glancing left and right as it reads.
+//
+//   . # # # # # # # .
+//   # ( o ) - ( o ) #     glasses
+//   . # . # . # . # .
+function glassesRow(tick: number, tone: Tone): Seg[] {
+  const frame = (text: string): Seg => ({ text, color: GLASSES, backgroundColor: tone.body, bold: true })
+  const look = ['•', '•', '‹', '•', '•', '›'][Math.floor(tick / 2) % 6] ?? '•'
+  const eye: Seg = { text: look, color: EYE_BLACK, backgroundColor: tone.body, bold: true }
+  return [{ text: '█', color: tone.body, bold: true }, frame('('), eye, frame(')'), frame('─'), frame('('), eye, frame(')'), { text: '█', color: tone.body, bold: true }]
+}
+
+// A question mark floating up over a researcher's head, moving one column
+// every half second.
+function thinkRow(tick: number): Seg[] {
+  const cells: Seg[] = Array.from({ length: 9 }, () => ({ text: ' ' }))
+  const at = 3 + (Math.floor(tick / 2) % 4)
+  cells[at] = { text: '?', color: THINK_BLUE, bold: true }
+  return cells
+}
+
+// One helper standing next to Clawd, four rows tall, each row the same width
+// at every tick: a coder in profile at its open laptop with sparks over it, a
+// planner under its hard hat marching in place, a researcher in glasses.
+function helperRows(kind: HelperKind, tick: number): Seg[][] {
+  const tone = helperTone()
+  if (kind === 'code') {
+    const laptop = [sparkRow(tick, tone), ...laptopRows(OPEN, true, tick)]
+    const pet = [[{ text: '         ' }], ...sidePetRows(tick % 2 === 1, tone)]
+    return laptop.map((row, i) => [...row, ...(pet[i] ?? [])])
+  }
+  const front = petRows('open', tone)
+  if (kind === 'plan') {
+    return [hatRow(), brimRow(tone), front[1] ?? [], marchingLegs(tick, tone)]
+  }
+  return [thinkRow(tick), front[0] ?? [], glassesRow(tick, tone), front[2] ?? []]
+}
+
 // Writes the mood only when it changed, so an idle tick redraws nothing new.
 async function setMood($: EngineInterface, next: PetMood) {
   if ((await read($, mood)) !== next) {
     await update($, mood, () => next)
+  }
+}
+
+// Sends a finished subagent's helper away.
+async function dismissHelper($: EngineInterface, id: string) {
+  const list = (await read($, helpers)) ?? []
+  if (list.some(h => h.id === id)) {
+    await update($, helpers, l => (l ?? []).filter(h => h.id !== id))
   }
 }
 
@@ -323,6 +407,7 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     c.lastActivityAt = await $.clock.now()
     await update($, mood, () => 'awake')
+    await update($, helpers, () => [])
 
     $.clock.every(TICK_MS, async () => {
       // Shift+Tab: the footer is the first to show the mode changed. Its word
@@ -422,6 +507,12 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.complete', async ($, e, next) => {
+    // A subagent's turn ending is that subagent done: its helper leaves, and
+    // Clawd's own turn goes on.
+    if (e.agentId !== undefined) {
+      await dismissHelper($, e.agentId)
+      return next(e)
+    }
     c.isTurnRunning = false
     c.lastActivityAt = await $.clock.now()
     await setMood($, await moodNow($, c))
@@ -483,6 +574,23 @@ export const register: Register = (on, options) => {
       await update($, isPlanMode, () => false)
     }
     return result
+  })
+
+  // Each subagent Claude starts (in the foreground or the background) brings
+  // a helper of its kind next to Clawd, until it finishes.
+  on('agent.spawn', async ($, e, next) => {
+    const result = await next(e)
+    const id = result.agentId
+    if (id !== undefined && !('deny' in result && result.deny)) {
+      const kind = helperKind(e.subagentType)
+      await update($, helpers, list => [...(list ?? []).filter(h => h.id !== id), { id, kind }])
+    }
+    return result
+  })
+
+  on('classic.SubagentStop', async ($, e, next) => {
+    await dismissHelper($, e.agent_id)
+    return next(e)
   })
 
   // Asked to plan, Claude may hand the work to its Plan subagent without
@@ -582,6 +690,13 @@ export const register: Register = (on, options) => {
     ]
     const behind = [blank, ...(isKnockedOut ? tumblingLaptop : behindRows(step))]
     const rows = e.props.maxRows >= 4 ? 4 : 3
+
+    // The helpers stand to Clawd's left, as many as the band has room for
+    // (Clawd itself takes about 30 columns, each helper 15).
+    const team = (await read($, helpers)) ?? []
+    const room = Math.max(0, Math.min(MAX_HELPERS, Math.floor((e.props.bodyColumns - 30) / 15)))
+    const shown = team.slice(0, room)
+    const extra = team.length - shown.length
     const fit = <T,>(column: T[]): T[] => column.slice(column.length - rows)
 
     const drawRow = (segs: Seg[], key: string) => (
@@ -597,6 +712,18 @@ export const register: Register = (on, options) => {
     // As wide as the band, everything pushed to its right end.
     return (
       <Box flexDirection="row" alignItems="flex-end" justifyContent="flex-end" width={e.props.bodyColumns}>
+        {extra > 0 ? (
+          <Box flexDirection="column" marginRight={1}>
+            <Text color={lighten(BODY)} bold>
+              +{extra}
+            </Text>
+          </Box>
+        ) : null}
+        {shown.map(helper => (
+          <Box key={`helper-${helper.id}`} flexDirection="column" marginRight={1}>
+            {fit(helperRows(helper.kind, tick)).map((r, i) => drawRow(r, `helper-${helper.id}-${i}`))}
+          </Box>
+        ))}
         <Box flexDirection="column" alignItems="flex-end">
           {fit(bubble).map((row, i) => (
             <Text key={`bubble-${i}`} color={isAsleep ? Z_FADED : BODY} bold={!isAsleep}>

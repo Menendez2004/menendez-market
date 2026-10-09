@@ -423,3 +423,92 @@ test('/pet color repaints Clawd now and saves the choice', async ($, on) => {
   // With no color, the list of colors.
   expect((await pet('color')).text).toContain('orange, blue')
 })
+
+// A subagent's turn ending, as the engine reports it.
+const finish = ($: any, agentId: string) =>
+  $.turn.complete({ answer: 'done', durationMs: 1, isAborted: false, turnId: `turn-${agentId}`, agentId, reason: 'answer' })
+
+const answerTurns = (on: any) => on('turn.complete', (_$: unknown, e: { answer: string }) => ({ text: e.answer }))
+
+test('each subagent brings its own helper: glasses to research, hard hat to plan, laptop to code', async ($, on) => {
+  const clock = mock.clock(on)
+  const ids = ['r1', 'p1', 'c1']
+  on('agent.spawn', () => ({ model: 'm', agentId: ids.shift() }))
+  on('classic.SubagentStop', () => ({}))
+  answerTurns(on)
+  await start($, on)
+
+  const look = async (pattern: RegExp) => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, pattern)
+    await ui.unmount()
+    return found
+  }
+
+  // Alone, no glasses, no hat, no laptop open.
+  expect(await look(/\(/)).toBeUndefined()
+
+  await ($.agent as any).spawn({ prompt: 'look around', subagentType: 'Explore' })
+  await clock.advance(250)
+  expect(await look(/^\($/)).toBeDefined() // the glasses' rim
+  expect(await look(/^─$/)).toBeDefined() // the bridge
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
+
+  await ($.agent as any).spawn({ prompt: 'plan it', subagentType: 'Plan' })
+  await clock.advance(250)
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined() // the planner's hard hat
+  // Clawd itself is idle: it still says hi.
+  expect(await look(/hi!/)).toBeDefined()
+
+  await ($.agent as any).spawn({ prompt: 'write it', subagentType: 'general-purpose' })
+  await clock.advance(250)
+  expect(await look(/╲/)).toBeDefined() // the coder's open laptop
+
+  // When a subagent finishes, its helper leaves.
+  await finish($, 'r1')
+  await clock.advance(250)
+  expect(await look(/^─$/)).toBeUndefined()
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined()
+
+  await ($.classic as any).SubagentStop({ agent_id: 'p1', agent_type: 'Plan', stop_hook_active: false, agent_transcript_path: '/tmp/t' })
+  await clock.advance(250)
+  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
+  expect(await look(/╲/)).toBeDefined()
+
+  await finish($, 'c1')
+  await clock.advance(250)
+  expect(await look(/╲/)).toBeUndefined()
+})
+
+test("a subagent's turn ending does not end Clawd's own work", async ($, on) => {
+  const clock = mock.clock(on)
+  on('agent.spawn', () => ({ model: 'm', agentId: 'c1' }))
+  answerTurns(on)
+  await start($, on)
+  await ($.turn as any).start({ text: 'build it' })
+  await ($.agent as any).spawn({ prompt: 'write it', subagentType: 'general-purpose' })
+  await finish($, 'c1')
+  await clock.advance(2_500)
+  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+  expect(await texts(ui as never, /done!|hi!/)).toBeUndefined()
+  await ui.unmount()
+})
+
+test('helpers are drawn lighter than Clawd, and the ones that do not fit show as +N', async ($, on) => {
+  const clock = mock.clock(on)
+  let n = 0
+  on('agent.spawn', () => ({ model: 'm', agentId: `a${++n}` }))
+  answerTurns(on)
+  await start($, on)
+  for (let i = 0; i < 5; i++) {
+    await ($.agent as any).spawn({ prompt: 'look', subagentType: 'Explore' })
+  }
+  await clock.advance(250)
+  const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+  // 80 columns hold Clawd and three helpers; two more wait off to the side.
+  expect(await texts(ui as never, /^\+2$/)).toBeDefined()
+  const rim = (await ui.find({ type: 'Text', text: /^\($/ } as never)) as { props?: { backgroundColor?: string } } | undefined
+  expect(rim?.props?.backgroundColor).toBeDefined()
+  expect(rim?.props?.backgroundColor).not.toBe('#E8713A')
+  await ui.unmount()
+})
