@@ -80,7 +80,7 @@ after every result from the files in .dev/tasks/, never edited from memory
 
 ## Plan
 
-Source: <Lead-provided | Orchestrator-proposed (opusplan), approved by Lead on <date> | Orchestrator, simple task>
+Source: <Lead-provided | Planner-proposed (orch-planner, Opus), approved by Lead on <date> | Orchestrator, simple task>
 File: <.dev/plans/<YYYY-MM-DD>-<short-name>.md, for plans the Orchestrator created | none (Lead-provided)>
 
 <The plan as a numbered list. If Lead-provided, copied verbatim -- never

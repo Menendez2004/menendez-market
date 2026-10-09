@@ -72,7 +72,7 @@ several paths and would swallow a prompt placed after it. With worktrees
 off, `DIR="$ROOT"` and `--add-dir` is not needed.
 
 `--model sonnet` runs the Task Agent on the latest Sonnet. Its Research
-Sub-agents get Sonnet 4.6 from their own agent definition
+Sub-agents get Sonnet 5 from their own agent definition
 (`references/models.md`), so nothing else goes on the command line.
 
 | Terminal | Command |
