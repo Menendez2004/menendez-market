@@ -59,8 +59,15 @@ ROOT="$(git rev-parse --show-toplevel)"
 NAME="orch-s2-ratelimit"
 DIR="$WTROOT/$NAME"                      # the step's worktree; "$ROOT" if worktrees are off
 BRIEF="$ROOT/.dev/tasks/step-2-ratelimit.md"
-CMD="claude 'Read $BRIEF and execute it exactly as written.' --model opus --add-dir '$ROOT/.dev'"
+RESULT="$ROOT/.dev/tasks/step-2-ratelimit.result.md"
+CMD="ORCH_RESULT='$RESULT' claude 'Read $BRIEF and execute it exactly as written.' --model opus --add-dir '$ROOT/.dev'; exit 0"
 ```
+
+`ORCH_RESULT` tells the plugin's Stop hook (`hooks/close_session.py`) which
+result file belongs to this session, so the session **closes by itself**
+when the step is done (section 3.1). The trailing `; exit 0` ends the shell
+the command runs in, with a clean status, so the tab/window/pane closes with
+it.
 
 The Task Agent starts **in its worktree** (`DIR`), so its edits and its
 Research Sub-agents' searches stay there. `--add-dir` lets it read the
@@ -78,14 +85,14 @@ Sub-agents get Sonnet 5 from their own agent definition
 | Terminal | Command |
 | --- | --- |
 | tmux | `tmux new-window -n "$NAME" -c "$DIR" "$CMD"` |
-| Zellij | `zellij action new-tab --name "$NAME" --cwd "$DIR"` then `zellij action write-chars "$CMD"` + Enter (or `zellij run --name "$NAME" --cwd "$DIR" -- sh -c "$CMD"` for a pane) |
+| Zellij | `zellij action new-tab --name "$NAME" --cwd "$DIR"` then `zellij action write-chars "$CMD"` + Enter (or `zellij run --close-on-exit --name "$NAME" --cwd "$DIR" -- sh -c "$CMD"` for a pane) |
 | kitty | `kitty @ launch --type=tab --tab-title "$NAME" --cwd "$DIR" sh -c "$CMD"` (needs `allow_remote_control yes`) |
 | WezTerm | `PANE=$(wezterm cli spawn --cwd "$DIR" -- sh -c "$CMD") && wezterm cli set-tab-title --pane-id "$PANE" "$NAME"` |
 | iTerm2 | AppleScript snippet below |
 | macOS Terminal | AppleScript snippet below |
-| Windows Terminal | `wt -w 0 new-tab --title "$NAME" -d "$DIR" <shell> -c "$CMD"` (e.g. `pwsh -NoExit -Command`) |
+| Windows Terminal | `wt -w 0 new-tab --title "$NAME" -d "$DIR" pwsh -Command "$env:ORCH_RESULT='<RESULT>'; claude '<prompt>' --model opus --add-dir '<ROOT>/.dev'"` (no `-NoExit`; see 3.1 for Windows) |
 | Konsole | `konsole --new-tab --workdir "$DIR" -p tabtitle="$NAME" -e sh -c "$CMD"` |
-| GNOME Terminal | `gnome-terminal --tab --title="$NAME" --working-directory="$DIR" -- sh -c "$CMD; exec \$SHELL"` |
+| GNOME Terminal | `gnome-terminal --tab --title="$NAME" --working-directory="$DIR" -- sh -c "$CMD"` |
 | Alacritty | `alacritty msg create-window --working-directory "$DIR" --title "$NAME" -e sh -c "$CMD"` (falls back to `alacritty --title ... -e ...`) |
 | VS Code / Cursor, Ghostty, unknown | See fallback below. |
 
@@ -112,12 +119,47 @@ Keep `$CMD` free of double quotes (use single quotes, as above) so it can be
 interpolated into the AppleScript string safely.
 
 Notes:
-- Keep the session open after the agent finishes (`exec $SHELL` or the
-  terminal's hold option) so the Lead can read the transcript.
+- Do not hold the session open after the agent finishes (no `exec $SHELL`,
+  no `-NoExit`, no hold option): it closes by itself (section 3.1).
 - Quote carefully: the brief path is the only argument the Task Agent
   needs; never inline chat history into the command.
 - If a command fails (remote control disabled, binary missing), try the
   fallback instead of switching to a different terminal app.
+
+## 3.1 The session closes when its step is done
+
+Every terminal Task Agent session ends by itself once its step is finished,
+so finished steps do not pile up as open tabs:
+
+1. The Task Agent writes its result (`.result.md.tmp`, then `mv`) and ends
+   its turn.
+2. The plugin's Stop hook (`hooks/close_session.py`) runs. If `ORCH_RESULT`
+   is set and that result, written during this session, says `Complete` or
+   `Failed`, it ends the `claude` process two seconds later.
+3. `claude` exits, `; exit 0` ends the shell, and the terminal closes the
+   tab/window/pane (tmux closes the window, a detached tmux session ends).
+
+It stays open when the step is `Blocked` (the agent escalated and waits for
+the Lead to answer in that terminal; once the Lead answers and the agent
+replaces the result with `Complete`, it closes then), when there is no
+result yet, and when the only result is an older attempt's. Nothing is lost
+by closing: the result file holds everything the Orchestrator needs, and
+the transcript stays available with `claude --resume` from the step's
+worktree (or `ROOT`).
+
+- To keep one session open (debugging a step), add `ORCH_KEEP_OPEN=1`
+  before `claude` in its `CMD`.
+- iTerm2 and macOS Terminal close the tab only if their profile closes it
+  when the shell exits (iTerm2 does by default; macOS Terminal: Settings ->
+  Profiles -> Shell -> "When the shell exits: Close if the shell exited
+  cleanly").
+- WezTerm closes a pane on a clean exit by default, which `; exit 0` gives.
+- Windows has no `ps`, so the hook does nothing there: the Orchestrator
+  closes the tab itself after merging the step (or the Lead closes it).
+- The Orchestrator never relies on the tab closing: it still waits for the
+  result file (section 5). A tab that closed without a result means the
+  session died; handle it like a dead terminal
+  (`references/context-scratchpad.md`, resuming).
 
 ## 4. Fallback (no scriptable way to open a tab)
 
@@ -128,8 +170,9 @@ a shell. In that case:
    attach:
    `tmux new-session -d -s "$NAME" -c "$DIR" "$CMD"` ->
    "Run `tmux attach -t $NAME` in a new terminal to watch step N."
-2. Otherwise, print the exact command (`cd <DIR> && <CMD>`) and ask the
-   Lead to open a new terminal named `$NAME` and paste it. Wait for the
+2. Otherwise, print the exact command (`cd <DIR> && <CMD>`, which already
+   ends in `; exit 0`) and ask the Lead to open a new terminal named
+   `$NAME` and paste it; it closes by itself when the step is done. Wait for the
    result file as usual.
 
 Never fall back to running the step inline in the Orchestrator's own session
