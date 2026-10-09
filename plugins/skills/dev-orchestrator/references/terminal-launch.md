@@ -59,7 +59,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 NAME="orch-s2-ratelimit"
 DIR="$WTROOT/$NAME"                      # the step's worktree; "$ROOT" if worktrees are off
 BRIEF="$ROOT/.dev/tasks/step-2-ratelimit.md"
-CMD="claude 'Read $BRIEF and execute it exactly as written.' --model sonnet --add-dir '$ROOT/.dev'"
+CMD="claude 'Read $BRIEF and execute it exactly as written.' --model opus --add-dir '$ROOT/.dev'"
 ```
 
 The Task Agent starts **in its worktree** (`DIR`), so its edits and its
@@ -71,7 +71,7 @@ from `ROOT` (for example `graphify-out/`), add that directory with another
 several paths and would swallow a prompt placed after it. With worktrees
 off, `DIR="$ROOT"` and `--add-dir` is not needed.
 
-`--model sonnet` runs the Task Agent on the latest Sonnet. Its Research
+`--model opus` runs the Task Agent on the latest Opus. Its Research
 Sub-agents get Sonnet 5 from their own agent definition
 (`references/models.md`), so nothing else goes on the command line.
 
@@ -183,7 +183,7 @@ dominates a small step. A step the dependency map marks **inline**
 - The Orchestrator creates the step's worktree like for any other step
   (`references/worktrees.md` section 4), writes the same brief file and
   starts the Task Agent with the inline `Agent` tool (a general-purpose
-  type that can edit), `model: "sonnet"`, `run_in_background: true`, no
+  type that can edit), `model: "opus"`, `run_in_background: true`, no
   `isolation` parameter (the Orchestrator's own worktree replaces it), and
   a prompt of "Read <absolute brief path> and execute it exactly as
   written. Work only inside <worktree path>. Reply only with

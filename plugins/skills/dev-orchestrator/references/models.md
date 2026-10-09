@@ -6,34 +6,33 @@ spent only where decisions are made.
 | Role | Model | How it is set |
 | --- | --- | --- |
 | Planning (Planner Agent, Level 1) | Opus (`opus` alias) | The plugin's `orch-planner` agent, whose definition sets `model: opus` and read-only tools. |
-| Orchestrator (Level 0) | the Lead's session model | Nothing to set: the Orchestrator no longer writes plans itself. |
-| Execution (Task Agents, Level 1) | latest Sonnet (`sonnet` alias) | `claude --model sonnet` in each Task Agent's launch command. |
-| Inline Task Agents (small steps) | latest Sonnet (`sonnet` alias) | `model: "sonnet"` on the `Agent` call. |
+| Orchestrator (Level 0) | latest Opus (`opus` alias) | `claude --model opus` or `/model opus`. It executes the steps itself in single-session mode, so it runs on the execution model. |
+| Execution (Task Agents, Level 1) | latest Opus (`opus` alias) | `claude --model opus` in each Task Agent's launch command. |
+| Inline Task Agents (small steps) | latest Opus (`opus` alias) | `model: "opus"` on the `Agent` call. |
 | Research Sub-agents (Level 2) | Sonnet 5 (`claude-sonnet-5-5`) | The plugin's `orch-researcher` agent, whose definition sets `model: claude-sonnet-5-5`. |
 
-## Planner Agent: Opus (the plan-mode half of `opusplan`)
+## Planner Agent: Opus
 
-`opusplan` means "Opus while planning, Sonnet while executing". The
-orchestrator applies it per role instead of per session: planning always
-goes to a dedicated agent on Opus, and execution to Task Agents on Sonnet.
-`opusplan` itself is a session setting and cannot be given to an agent, so
-the planner pins `model: opus` and gets only read-only tools (`Read`,
-`Grep`, `Glob`, `Bash`), which is what plan mode guarantees.
+Planning always goes to a dedicated agent on the latest Opus. A plan-mode
+setting cannot be given to an agent, so the planner pins `model: opus` and
+gets only read-only tools (`Read`, `Grep`, `Glob`, `Bash`), which is what
+plan mode guarantees.
 
 Spawn it with `subagent_type: "dev-orchestrator:orch-planner"` and **no**
 `model` parameter, whether or not the session is in plan mode (the `Agent`
-tool works in plan mode). The Orchestrator session can stay on whatever
-model the Lead chose; `/model opusplan` is still a good default for it, but
-it is not required.
+tool works in plan mode). Do not run the Orchestrator session on
+`opusplan`: outside plan mode it falls back to Sonnet, and the Orchestrator
+executes steps itself in single-session mode. If the session is not on
+Opus when execution starts, ask the Lead once to switch (`/model opus`).
 
 If that agent type is not available (the skill was copied without the
 plugin), use `subagent_type: "Plan"` with `model: "opus"` and note it in
 the scratchpad's `## Environment`.
 
-## Task Agents: latest Sonnet
+## Task Agents: latest Opus
 
 The launch command in `references/terminal-launch.md` pins every Task Agent
-to `--model sonnet`, which resolves to the latest Sonnet. Do not use a
+to `--model opus`, which resolves to the latest Opus. Do not use a
 dated model ID here: the alias keeps Task Agents current without editing
 the skill.
 
@@ -51,8 +50,8 @@ plugin), use `subagent_type: "Explore"` with `model: "sonnet"`, and note in
 the scratchpad's `## Environment` that research ran on the latest Sonnet
 instead of Sonnet 5.
 
-Inline Task Agents pass `model: "sonnet"` explicitly, so they keep running
-on the latest Sonnet.
+Inline Task Agents pass `model: "opus"` explicitly, so they run on the
+latest Opus like terminal Task Agents.
 
 ## Other harnesses
 
