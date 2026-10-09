@@ -456,7 +456,7 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
 
   await ($.agent as any).spawn({ prompt: 'plan it', subagentType: 'Plan' })
   await clock.advance(250)
-  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined() // the planner's hard hat
+  expect(await look(/^▄▄$/)).toBeDefined() // the planner's hard hat
   // Clawd itself is idle: it still says hi.
   expect(await look(/hi!/)).toBeDefined()
 
@@ -468,11 +468,11 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   await finish($, 'r1')
   await clock.advance(250)
   expect(await look(/^─$/)).toBeUndefined()
-  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeDefined()
+  expect(await look(/^▄▄$/)).toBeDefined()
 
   await ($.classic as any).SubagentStop({ agent_id: 'p1', agent_type: 'Plan', stop_hook_active: false, agent_transcript_path: '/tmp/t' })
   await clock.advance(250)
-  expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
+  expect(await look(/^▄▄$/)).toBeUndefined()
   expect(await look(/╲/)).toBeDefined()
 
   await finish($, 'c1')
@@ -494,21 +494,34 @@ test("a subagent's turn ending does not end Clawd's own work", async ($, on) => 
   await ui.unmount()
 })
 
-test('helpers are drawn lighter than Clawd, and the ones that do not fit show as +N', async ($, on) => {
+test("helpers are smaller, in Clawd's color, with their own hat and laptop colors; extras show as +N", async ($, on) => {
   const clock = mock.clock(on)
   let n = 0
   on('agent.spawn', () => ({ model: 'm', agentId: `a${++n}` }))
   answerTurns(on)
   await start($, on)
-  for (let i = 0; i < 5; i++) {
-    await ($.agent as any).spawn({ prompt: 'look', subagentType: 'Explore' })
+  const spawnAll = async (subagentType: string, count: number) => {
+    for (let i = 0; i < count; i++) {
+      await ($.agent as any).spawn({ prompt: 'go', subagentType })
+    }
   }
+  await spawnAll('Explore', 1)
+  await spawnAll('Plan', 1)
+  await spawnAll('general-purpose', 3)
   await clock.advance(250)
+
+  type Node = { text?: string; props?: { color?: string; backgroundColor?: string } }
   const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
-  // 80 columns hold Clawd and three helpers; two more wait off to the side.
-  expect(await texts(ui as never, /^\+2$/)).toBeDefined()
-  const rim = (await ui.find({ type: 'Text', text: /^\($/ } as never)) as { props?: { backgroundColor?: string } } | undefined
-  expect(rim?.props?.backgroundColor).toBeDefined()
-  expect(rim?.props?.backgroundColor).not.toBe('#E8713A')
+  const find = async (text: RegExp) => (await ui.find({ type: 'Text', text } as never)) as Node | undefined
+
+  // At most three helpers stand next to Clawd; two more wait off to the side.
+  expect(await find(/^\+2$/)).toBeDefined()
+  // Smaller: a seven-pixel body with legs one row, not Clawd's nine.
+  expect(await find(/^ █▀█▀█ $/)).toBeDefined()
+  // Same body color as Clawd: the glasses sit on it.
+  expect((await find(/^\($/))?.props?.backgroundColor).toBe('#E8713A')
+  // Only the gear changes color: a blue hard hat, a teal laptop.
+  expect((await find(/^▄▄$/))?.props?.color).toBe('#3D8BFD')
+  expect((await find(/^▀▀$/))?.props?.color).toBe('#2BB3A3')
   await ui.unmount()
 })
