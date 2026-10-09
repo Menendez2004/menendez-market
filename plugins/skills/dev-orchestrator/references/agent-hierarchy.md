@@ -5,6 +5,7 @@
 | Level | Agent | How it is created | Lifetime |
 | --- | --- | --- | --- |
 | 0 | Orchestrator Hub | The Lead's main session | Whole task |
+| 1 | Planner Agent | Orchestrator calls the inline `Agent` tool (`dev-orchestrator:orch-planner`), only when no plan is given | One plan draft |
 | 1 | Task Agent | Orchestrator opens a new terminal and starts a full CLI session (`claude`) in it | One plan step |
 | 2 | Research Sub-agent | A Task Agent calls the inline `Agent` tool | One question |
 
@@ -30,8 +31,8 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 - Receives the task, adopts and validates the Lead's plan
   (`rules/high-adopt-lead-plan.md`), or -- only if there is no plan and the
-  task is complex -- drafts one in plan mode under `opusplan`
-  (`references/models.md`) or requests one.
+  task is complex -- has the Planner Agent draft one
+  (`references/models.md`) or requests one. Never drafts it itself.
 - Asks the mandatory single-session vs. multi-agent question.
 - Sole writer of `.dev/orchestrator.md`.
 - Launches one Task Agent per plan step in the user's terminal
@@ -41,6 +42,19 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Never implements a step itself in multi-agent mode.
 - Runs the final checks once, after every step is complete, and never runs
   tests (`rules/high-checks-not-tests.md`).
+
+### Planner Agent (Level 1)
+
+- Ephemeral, spawned inline by the Orchestrator only when no plan was given
+  and the task is complex.
+- Runs on Opus through the plugin's `orch-planner` agent (read-only tools,
+  so it behaves as plan mode). Never pass a `model` parameter.
+- Uses graphify first when available, reads only what it needs, and returns
+  numbered steps with `Writes`/`Reads`/`Needs`, hotspots, open questions for
+  the Lead (with options and a recommendation) and evidence.
+- Never writes, never spawns, never talks to the Lead, never picks between
+  two reasonable designs: the Orchestrator shows its draft and questions to
+  the Lead, who approves or changes it.
 
 ### Task Agent (Level 1)
 
@@ -68,7 +82,7 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 
 - Ephemeral, spawned inline by a Task Agent (or by the Orchestrator in
   single-session mode).
-- Runs on Sonnet 4.6 through the plugin's `orch-researcher` agent
+- Runs on Sonnet 5 through the plugin's `orch-researcher` agent
   (`references/models.md`). Never pass a `model` parameter on the `Agent`
   call.
 - **Strictly read-only**: reads files, runs searches, reads logs and docs,

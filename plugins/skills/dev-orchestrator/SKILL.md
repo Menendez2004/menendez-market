@@ -1,25 +1,38 @@
 ---
 name: dev-orchestrator
 description: >-
-  Human-in-the-loop orchestrator for multi-step dev tasks. Adopts the Lead's
-  plan (drafts one in plan mode under opusplan only if none is given), maps
-  step dependencies, then runs the steps itself or through Task Agents in
-  their own terminals (orch-sN-name) and their own git worktrees, with
-  read-only Research Sub-agents below them (max 2 levels). Each finished
-  step lands in the Lead's tree as a checked, uncommitted patch. Never runs tests, never guesses, never touches
-  git: escalates to the Lead. Use for "orchestrate this", "use
-  dev-orchestrator", "plan and delegate this task", "run this plan with task
-  agents", or any multi-step dev task where the user asks how to run it.
+  MUST be used first, before planning on your own or answering from general
+  knowledge, whenever the user asks to create, draft or design a plan
+  ("crea un plan", "planifica", "plan this", "implementation plan"), works in
+  plan mode, or asks for any multi-step dev task. Human-in-the-loop
+  orchestrator: adopts the Lead's plan, or has the read-only orch-planner
+  agent (Opus) draft one when none is given; maps step dependencies, then
+  runs the steps itself or through Task Agents (latest Sonnet) in their own
+  terminals and git worktrees, with read-only Research Sub-agents (Sonnet 5)
+  below them (max 2 levels). Never runs tests, never guesses, never touches
+  git: escalates to the Lead. Also for "orchestrate this", "use
+  dev-orchestrator", "plan and delegate this task", "run this plan with
+  task agents".
 metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
   status: draft
-  version: 9
+  version: 10
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
 
 # dev-orchestrator
+
+## Priority
+
+For any request to create or design a plan, any prompt sent in plan mode,
+and any multi-step dev task, this skill is the **first and only route**: do
+not draft the plan from your own knowledge, and do not use the built-in
+`Plan` or `Explore` agents for it. The plugin's `UserPromptSubmit` hook
+(`hooks/route_prompt.py`) reinforces this by injecting a routing reminder on
+those prompts, so the Lead never has to invoke the skill by name. Task
+Agents (prompts that point at `.dev/tasks/`) are never re-routed.
 
 ## Role
 
@@ -31,6 +44,8 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
          v
 [Orchestrator Hub]  (Level 0 -- this session)
          |
+         |-> [Planner Agent]  (Level 1 -- read-only inline agent on Opus; only when no plan is given)
+         |
          |-> [Task Agent: step 1]  (Level 1 -- independent CLI session in its own terminal and worktree)
          |        `-> [Research Sub-agent]  (Level 2 -- read-only inline agent, graphify if available)
          |
@@ -41,17 +56,19 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
 | Level | Who | Can do | Can NOT do |
 | --- | --- | --- | --- |
 | -- | **Lead Developer** (human) | Reviews the plan, makes architectural calls, has the final word. | -- |
-| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or draft one in plan mode under `opusplan` when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches. | Make architectural or destructive decisions; commit/push/merge/PR. |
+| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or have the Planner Agent draft one when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches. | Make architectural or destructive decisions; commit/push/merge/PR. |
 | 1 | **Task Agent** | Execute exactly one plan step; modify code for that step inside its own worktree; spawn Research Sub-agents via the inline `Agent` tool. | Edit the Lead's working tree; launch other Task Agents or terminals; work on other steps; run git commands that change anything; commit/push/merge/PR. |
+| 1 | **Planner Agent** | Read the codebase (graphify first), return a plan draft with steps, footprints, hotspots and open questions. | Write/edit anything; spawn any agent; talk to the Lead; decide architecture (lists options instead). |
 | 2 | **Research Sub-agent** | Read files, run searches, read logs/docs, run `graphify`; return a short synthesis. | Write/edit anything; spawn any agent; talk to the Lead. |
 
 The hierarchy is capped at **2 levels below you**. Nothing below Level 2
 exists.
 
-Each role has a fixed model: **planning** with `opusplan` (the Orchestrator
-session; Opus in plan mode), **execution** with the latest Sonnet (Task
-Agents, `claude --model sonnet`), and **research** with Sonnet 4.6 (Research
-Sub-agents, pinned through `CLAUDE_CODE_SUBAGENT_MODEL`). How to set each:
+Each role has a fixed model: **planning** on Opus (the `orch-planner`
+agent: read-only, so it is the plan-mode half of `opusplan`), **execution**
+with the latest Sonnet (Task Agents, `claude --model sonnet`), and
+**research** with Sonnet 5 (Research Sub-agents, pinned in the
+`orch-researcher` agent as `claude-sonnet-5-5`). How to set each:
 `references/models.md`. Full roles, permissions and briefing templates:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
@@ -96,17 +113,24 @@ Criteria: `references/execution-modes.md`.
 
 ### 3. Propose or request a plan (complex tasks without a plan only)
 
-Either draft a plan yourself **in plan mode** with the session on
-`opusplan`, so Opus writes it and no code is touched, or ask the Lead to
-supply one via `escalate_to_lead`. A proposed plan is a **draft**: the Lead
-must approve it before it counts as the plan. Record it with `Source:
-Orchestrator-proposed (opusplan), approved by Lead on <date>`. See
+Deploy the **Planner Agent**: call the inline `Agent` tool with
+`subagent_type: "dev-orchestrator:orch-planner"` and **no** `model`
+parameter (its definition pins Opus), briefed with the Lead's task
+verbatim, the project root and any constraints. It is read-only and returns
+a plan draft. Do not draft the plan yourself. Alternatively, when the task
+is too open-ended to plan, ask the Lead to supply one via
+`escalate_to_lead`.
+
+Show the draft to the Lead together with the Planner's open questions
+(batched, per step 10). A proposed plan is a **draft**: the Lead must
+approve it before it counts as the plan. Record it with `Source:
+Planner-proposed (orch-planner, Opus), approved by Lead on <date>`. See
 `references/models.md`.
 
 Every plan you create is saved as a file in `.dev/plans/`
 (`.dev/plans/<YYYY-MM-DD>-<short-name>.md`, create the directory if needed)
-as soon as you leave plan mode, before anything else: plan mode cannot
-write files. The scratchpad's `## Plan` section records the same plan with
+as soon as the Planner returns (or, if the session is in plan mode, as soon
+as you leave it: plan mode cannot write files). The scratchpad's `## Plan` section records the same plan with
 a `File:` line pointing to it. If the Lead asks for changes, update that
 same file (and the scratchpad) instead of creating a new one. Plans the
 Lead provides are not copied there. Format:
@@ -237,7 +261,7 @@ Details: `rules/high-checks-not-tests.md`.
 
 Task Agents investigate **before** modifying code by spawning ephemeral
 Research Sub-agents through the inline `Agent` tool
-(`subagent_type: "dev-orchestrator:orch-researcher"`, Sonnet 4.6,
+(`subagent_type: "dev-orchestrator:orch-researcher"`, Sonnet 5,
 read-only tools), so exploration output does not pollute the Task Agent's
 main context. They do this only for what the step's `.dev/research/` file
 does not already answer. Each Research Sub-agent:
@@ -304,7 +328,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 
 - `references/agent-hierarchy.md` -- levels, roles, permissions, briefing templates.
 - `references/task-agent-rules.md` -- rules every Task Agent follows (copied to `.dev/tasks/_rules.md`).
-- `references/models.md` -- model per role (opusplan, latest Sonnet, Sonnet 4.6).
+- `references/models.md` -- model per role (Opus planner, latest Sonnet, Sonnet 5).
 - `references/parallelization.md` -- dependency map, dependency-driven scheduling, blocked steps.
 - `references/terminal-launch.md` -- terminal detection, launch commands, background waiting, inline runner.
 - `references/worktrees.md` -- worktree preconditions, snapshot, creation, patch integration, relaunch, cleanup, resume.

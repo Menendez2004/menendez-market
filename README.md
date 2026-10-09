@@ -22,7 +22,7 @@ Marketplace de plugins para Claude Code.
 
 | Plugin | Descripción |
 | --- | --- |
-| `dev-orchestrator` | Human-in-the-loop development orchestrator with a 2-level hierarchy: adopts the Lead's plan (or drafts one in plan mode under opusplan if none is given), launches one Task Agent per step in its own terminal (or inline for small steps) and its own git worktree, applying each finished step to the Lead's working tree as a checked, uncommitted patch, starting each step as soon as its dependencies finish, and each agent can use read-only research sub-agents (Sonnet 4.6) that prioritize graphify. Execution runs on the latest Sonnet. Never runs tests; runs checks once at the end. Escalates to the Lead on ambiguity or destructive actions. |
+| `dev-orchestrator` | Human-in-the-loop development orchestrator with a 2-level hierarchy. Claude lo reconoce solo, sin invocarlo: un hook `UserPromptSubmit` le da prioridad cuando pides un plan ("crea un plan", "planifica", "plan this") o una tarea de varios pasos, y en cualquier prompt en modo plan. Adopts the Lead's plan, or, if none is given, deploys a read-only Planner Agent on Opus (`orch-planner`, the plan-mode half of opusplan) to draft one, then launches one Task Agent per step in its own terminal (or inline for small steps) and its own git worktree, applying each finished step to the Lead's working tree as a checked, uncommitted patch, starting each step as soon as its dependencies finish, and each agent can use read-only research sub-agents (Sonnet 5) that prioritize graphify. Execution runs on the latest Sonnet. Never runs tests; runs checks once at the end. Escalates to the Lead on ambiguity or destructive actions. |
 | `qa` | Suite de QA (se instala completa). Incluye las skills: `qa-orchestrator` (orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes), `qa-happy-path` (prueba los flujos principales de la UI con Playwright), `qa-api-adversary` (intenta romper la API: auth, validación, duplicados, condiciones de carrera, requests malformados), `qa-debugger` (aplica correcciones mínimas a los bugs reportados) y `qa-personality-builder` (crea personalidades de QA propias del proyecto en `.qa/config.yml`). |
 | `clawd-pet` | Mod (no es una skill): Clawd, la mascota de Claude, vive justo encima del prompt del CLI, a la derecha, con su laptop. Saluda cuando estás presente, teclea en su laptop mientras Claude trabaja, se pone casco en modo plan, queda noqueado cuando falla un comando y se duerme con un "Zzz" flotando cuando dejas de escribir (60 s por defecto; cámbialo con `idleSeconds` en `/config`). Escribe cualquier cosa para despertarlo; `/pet` lo oculta o lo muestra, y `/pet color <nombre o #hex>` (o `/config`) le cambia el color: `orange`, `blue`, `green`, `purple`, `pink`, `red`, `yellow`, `gray` o cualquier hexadecimal. |
 | `unit-test-generator` | Genera unit tests estrictos y aislados con el runner, la librería de mocks y las factories que ya usa el repo. Los datos salen de Faker o de factories (nunca objetos escritos a mano), con semilla fija, patrón AAA y casos de éxito, ramas, entradas inválidas, límites, errores y efectos secundarios. Exige al menos 90% de coverage (líneas, sentencias, ramas y funciones) en la unidad probada. Nunca modifica código de producción: reporta los bugs que encuentra. |
@@ -35,7 +35,7 @@ Marketplace de plugins para Claude Code.
   marketplace.json          # catálogo: cada plugin apunta a sus skills
 plugins/
   skills/
-    dev-orchestrator/       # SKILL.md + references/, rules/
+    dev-orchestrator/       # SKILL.md + references/, rules/, agents/, hooks/route_prompt.py
     qa/                     # todas las skills de QA
       qa-orchestrator/        # SKILL.md + references/, rules/, assets/
       qa-happy-path/          # SKILL.md + rules/
@@ -49,8 +49,8 @@ plugins/
 ```
 
 Cada entrada de `marketplace.json` usa `"strict": false` y declara sus skills con
-`"skills": [...]`. `dev-orchestrator` carga solo su skill (y su agente
-`orch-researcher`), `unit-test-generator` y `api-handoff` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
+`"skills": [...]`. `dev-orchestrator` carga solo su skill (sus agentes
+`orch-planner` y `orch-researcher`, y su hook de ruteo), `unit-test-generator` y `api-handoff` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
 juntas, porque `qa-orchestrator` lanza a las demás.
 
 Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` y agrega una
