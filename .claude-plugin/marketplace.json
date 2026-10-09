@@ -87,6 +87,27 @@
       ]
     },
     {
+      "name": "api-handoff",
+      "source": "./",
+      "description": "Write and implement API handoff documents (Markdown) between frontend and backend. Backend → Frontend: documents the endpoint the frontend must consume. Frontend → Backend: specifies the endpoint the backend must build. Every endpoint gets its purpose, method and full path, auth, params, headers, the exact request body (field table + JSON example that must match), every success and error response, side effects and testable acceptance criteria, all extracted from real code (never invented; unknowns become TBD + open questions). Uses a fixed template with YAML front matter and ships a validator script, so any other Claude session can implement the handoff exactly and report contract mismatches. Trigger on \"handoff\", \"write a handoff for the frontend\", \"handoff to backend\", \"implement this handoff\", or /api-handoff.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/api-handoff"
+      ],
+      "keywords": [
+        "handoff",
+        "api-contract",
+        "frontend",
+        "backend",
+        "documentation",
+        "markdown"
+      ]
+    },
+    {
       "name": "clawd-pet",
       "source": "./plugins/mods/clawd-pet",
       "description": "Clawd, the Claude pet from the desktop app, sits right above the Claude Code CLI prompt, on the right, with its laptop: it waves when you are around, turns sideways, pulls its laptop out and types with sparks flying while Claude works, wears a hard hat in plan mode, gets knocked out when a command fails, and falls asleep with a floating \"Zzz\" when you stop typing (60 s by default, set idleSeconds in /config). Type anything to wake it; /pet hides or shows it, and /pet color (or /config) changes its color: a palette name or any hex.",
