@@ -50,35 +50,39 @@ the plan" below).
 
 Two options -- pick the one that fits, or offer both to the Lead:
 
-- **Propose a plan in plan mode under `opusplan`.** In Claude Code, the
-  Orchestrator session runs on `opusplan`, so while in plan mode Opus drafts
-  a numbered step-by-step plan. Plan mode is read-only: it writes no code and
-  touches no files. If the session is not on `opusplan`, ask the Lead to
-  switch (`/model opusplan`) first. In other harnesses, use the strongest
-  configured model and note which one produced the plan
-  (`references/models.md`).
+- **Deploy the Planner Agent (default).** Spawn
+  `dev-orchestrator:orch-planner` with the inline `Agent` tool and no
+  `model` parameter. It runs on Opus with read-only tools (so it behaves as
+  plan mode), uses graphify first when available, and returns a
+  numbered plan with per-step `Writes`/`Reads`/`Needs`, hotspots, and open
+  questions for the Lead. The Orchestrator never drafts the plan itself. In
+  other harnesses, use the strongest configured model and note which one
+  produced the plan (`references/models.md`).
 - **Request the plan from the Lead** via `escalate_to_lead`
   (`reason: ambiguous_requirement`), e.g. when the task is too open-ended to
   plan responsibly.
 
 An Orchestrator-proposed plan is a draft until the Lead approves it. Record
-`Source: Orchestrator-proposed (opusplan), approved by Lead on <date>`.
+`Source: Planner-proposed (orch-planner, Opus), approved by Lead on <date>`.
+The Planner's `Writes`/`Reads`/`Needs` lines are a starting point for the
+dependency map (step 4), still confirmed by research before scheduling.
 
 Each plan step should be describable in one or two sentences, because that is
 what one Task Agent receives.
 
 ### Saving the plan
 
-Every plan the Orchestrator creates (an `opusplan` draft or a one-step plan
+Every plan the Orchestrator creates (a Planner draft or a one-step plan
 for a simple task) is saved as its own file:
 
 - Path: `.dev/plans/<YYYY-MM-DD>-<short-name>.md`, relative to the project
   root (kebab-case short name, e.g. `2026-10-06-rate-limit.md`). Create
   `.dev/plans/` if it does not exist. If the name is taken by another task,
   add a suffix (`-2`).
-- When: right after leaving plan mode, before any other step. Plan mode is
-  read-only, so the draft is written as soon as it exits; with Claude Code's
-  plan approval, that is when the Lead approves it.
+- When: as soon as the Planner Agent returns, before any other step. If the
+  session is in plan mode (which cannot write files), write it as soon as
+  plan mode exits; with Claude Code's plan approval, that is when the Lead
+  approves it.
 - Changes: if the Lead asks for changes, edit the same file and its
   `Status`/`Updated` lines; never create a second file for the same task.
 - Lead-provided plans are not saved here: they already live where the Lead
@@ -87,7 +91,7 @@ for a simple task) is saved as its own file:
 ```markdown
 # Plan: <short task title>
 
-- Source: <Orchestrator-proposed (opusplan) | Orchestrator, simple task>
+- Source: <Planner-proposed (orch-planner, Opus) | Orchestrator, simple task>
 - Status: <draft | approved by Lead on <YYYY-MM-DD> | superseded>
 - Created: <YYYY-MM-DD HH:MM>
 - Updated: <YYYY-MM-DD HH:MM>
