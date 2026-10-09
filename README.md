@@ -12,6 +12,7 @@ Marketplace de plugins para Claude Code.
 /plugin install dev-orchestrator@menendez-market
 /plugin install qa@menendez-market
 /plugin install unit-test-generator@menendez-market
+/plugin install api-handoff@menendez-market
 /plugin install clawd-pet@menendez-market
 ```
 
@@ -25,6 +26,7 @@ Marketplace de plugins para Claude Code.
 | `qa` | Suite de QA (se instala completa). Incluye las skills: `qa-orchestrator` (orquesta sesiones de QA: lanza agentes de prueba en paralelo, recolecta resultados, hace triage de bugs y genera reportes), `qa-happy-path` (prueba los flujos principales de la UI con Playwright), `qa-api-adversary` (intenta romper la API: auth, validación, duplicados, condiciones de carrera, requests malformados), `qa-debugger` (aplica correcciones mínimas a los bugs reportados) y `qa-personality-builder` (crea personalidades de QA propias del proyecto en `.qa/config.yml`). |
 | `clawd-pet` | Mod (no es una skill): Clawd, la mascota de Claude, vive justo encima del prompt del CLI, a la derecha, con su laptop. Saluda cuando estás presente, teclea en su laptop mientras Claude trabaja, se pone casco en modo plan, queda noqueado cuando falla un comando y se duerme con un "Zzz" flotando cuando dejas de escribir (60 s por defecto; cámbialo con `idleSeconds` en `/config`). Escribe cualquier cosa para despertarlo; `/pet` lo oculta o lo muestra, y `/pet color <nombre o #hex>` (o `/config`) le cambia el color: `orange`, `blue`, `green`, `purple`, `pink`, `red`, `yellow`, `gray` o cualquier hexadecimal. |
 | `unit-test-generator` | Genera unit tests estrictos y aislados con el runner, la librería de mocks y las factories que ya usa el repo. Los datos salen de Faker o de factories (nunca objetos escritos a mano), con semilla fija, patrón AAA y casos de éxito, ramas, entradas inválidas, límites, errores y efectos secundarios. Exige al menos 90% de coverage (líneas, sentencias, ramas y funciones) en la unidad probada. Nunca modifica código de producción: reporta los bugs que encuentra. |
+| `api-handoff` | Escribe e implementa documentos de handoff (Markdown) entre frontend y backend. Para frontend: el endpoint que debe consumir; para backend: el endpoint que debe construir. Cada endpoint lleva su finalidad, método y ruta completa, auth, parámetros, headers, el body exacto (tabla de campos + ejemplo JSON que deben coincidir), todas las respuestas de éxito y error, efectos secundarios y criterios de aceptación verificables, todo extraído del código real (lo que no está decidido queda como `TBD` + pregunta abierta). Usa una plantilla fija con front matter YAML e incluye un script validador, para que cualquier otra sesión de Claude pueda implementarlo tal cual y reportar diferencias con el contrato. |
 
 ## Estructura
 
@@ -41,13 +43,14 @@ plugins/
       qa-debugger/            # SKILL.md + rules/
       qa-personality-builder/ # SKILL.md + references/, rules/
     unit-test-generator/    # SKILL.md + references/, rules/
+    api-handoff/            # SKILL.md + references/ (plantilla, ejemplos), rules/, scripts/validate_handoff.py
   mods/
     clawd-pet/              # .claude-plugin/plugin.json + hooks/register.tsx, types/, tests/
 ```
 
 Cada entrada de `marketplace.json` usa `"strict": false` y declara sus skills con
 `"skills": [...]`. `dev-orchestrator` carga solo su skill (y su agente
-`orch-researcher`), `unit-test-generator` carga solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
+`orch-researcher`), `unit-test-generator` y `api-handoff` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
 juntas, porque `qa-orchestrator` lanza a las demás.
 
 Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` y agrega una
