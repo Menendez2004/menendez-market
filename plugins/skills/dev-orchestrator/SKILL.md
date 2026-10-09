@@ -214,7 +214,10 @@ ordering constraints.
   2. **terminal** steps: open a new tab/window/pane in the terminal the user
      is using, named exactly `orch-s[N]-[short-name]` (kebab-case, e.g.
      `orch-s2-ratelimit`), and start `claude --model opus` in the step's
-     worktree on the brief, with `--add-dir <ROOT>/.dev`.
+     worktree on the brief, with `--add-dir <ROOT>/.dev` and `ORCH_RESULT`
+     set to the step's result path. The session closes by itself once the
+     step is `Complete` or `Failed`; a `Blocked` one stays open for the
+     Lead.
      **inline** steps: start the Task Agent with the inline `Agent` tool on
      the same brief, told to work only inside its worktree. See
      `references/terminal-launch.md`.
