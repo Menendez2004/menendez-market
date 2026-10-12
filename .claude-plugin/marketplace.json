@@ -11,8 +11,8 @@
     {
       "name": "dev-orchestrator",
       "source": "./",
-      "description": "Human-in-the-loop orchestrator for multi-step dev tasks with a two-level agent hierarchy. Recognized automatically: a UserPromptSubmit hook routes any prompt that asks for a plan or multi-step dev work, and every prompt in plan mode, to this skill first, without having to invoke it. Adopts the Lead's plan, or, when none is given, has a read-only Planner Agent on Opus (orch-planner) draft one for the Lead to approve. Execution runs on the latest Opus. Maps step dependencies and asks whether to run as a single session or multi-agent. In multi-agent mode each step gets a Task Agent on the latest Opus, in its own terminal (orch-sN-name) or inline for small steps and in its own git worktree (each finished step is applied to the Lead's tree as a checked, uncommitted patch), and starts as soon as its dependencies finish. A terminal Task Agent session closes by itself once its step is Complete or Failed (a Stop hook ends it); a Blocked step stays open so the Lead can answer there. Task Agents reuse the orchestrator's research and may spawn read-only Research Sub-agents (Sonnet 5) that use graphify first. Never runs tests: checks run once at the end. Never guesses on ambiguity, architecture, or destructive/git actions: escalates to the Lead. Trigger phrases: \"create a plan\", \"crea un plan\", \"planifica\", \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\".",
-      "version": "1.3.0",
+      "description": "Human-in-the-loop orchestrator for multi-step dev tasks with a two-level agent hierarchy. Adopts the Lead's plan (drafts one in plan mode under opusplan only if none is given), maps step dependencies and asks whether to run as a single session or multi-agent. In multi-agent mode each step gets a Task Agent on the latest Sonnet, in its own terminal (orch-sN-name) or inline for small steps and in its own git worktree (each finished step is applied to the Lead's tree as a checked, uncommitted patch), and starts as soon as its dependencies finish. Task Agents reuse the orchestrator's research and may spawn read-only Research Sub-agents (Sonnet 4.6) that use graphify first. Never runs tests: checks run once at the end. Never guesses on ambiguity, architecture, or destructive/git actions: escalates to the Lead. Trigger phrases: \"orchestrate this\", \"use dev-orchestrator\", \"plan and delegate this task\", \"run this plan with task agents\".",
+      "version": "1.0.0",
       "author": {
         "name": "Menendez2004"
       },
@@ -21,33 +21,8 @@
         "./plugins/skills/dev-orchestrator"
       ],
       "agents": [
-        "./plugins/skills/dev-orchestrator/agents/orch-planner.md",
         "./plugins/skills/dev-orchestrator/agents/orch-researcher.md"
       ],
-      "hooks": {
-        "UserPromptSubmit": [
-          {
-            "hooks": [
-              {
-                "type": "command",
-                "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/plugins/skills/dev-orchestrator/hooks/route_prompt.py\"",
-                "timeout": 10
-              }
-            ]
-          }
-        ],
-        "Stop": [
-          {
-            "hooks": [
-              {
-                "type": "command",
-                "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/plugins/skills/dev-orchestrator/hooks/close_session.py\"",
-                "timeout": 10
-              }
-            ]
-          }
-        ]
-      },
       "keywords": [
         "orchestration",
         "hitl",
@@ -109,66 +84,6 @@
         "mocking",
         "faker",
         "factories"
-      ]
-    },
-    {
-      "name": "api-handoff",
-      "source": "./",
-      "description": "Write and implement API handoff documents (Markdown) between frontend and backend. Backend → Frontend: documents the endpoint the frontend must consume. Frontend → Backend: specifies the endpoint the backend must build. Every endpoint gets its purpose, method and full path, auth, params, headers, the exact request body (field table + JSON example that must match), every success and error response, side effects and testable acceptance criteria, all extracted from real code (never invented; unknowns become TBD + open questions). Uses a fixed template with YAML front matter and ships a validator script, so any other Claude session can implement the handoff exactly and report contract mismatches. Trigger on \"handoff\", \"write a handoff for the frontend\", \"handoff to backend\", \"implement this handoff\", or /api-handoff.",
-      "version": "1.1.0",
-      "author": {
-        "name": "Menendez2004"
-      },
-      "strict": false,
-      "skills": [
-        "./plugins/skills/api-handoff"
-      ],
-      "keywords": [
-        "handoff",
-        "api-contract",
-        "frontend",
-        "backend",
-        "documentation",
-        "markdown"
-      ]
-    },
-    {
-      "name": "endpoint-security-audit",
-      "source": "./",
-      "description": "White-box security audit of an API's endpoints and the functions behind them. Builds a route map (method, full path, handler, middleware chain, auth) with a bundled route-inventory script, then traces every request input through the handler and every service, repository and helper it calls, checking broken authentication, object- and function-level authorization (BOLA/IDOR, BFLA), SQL/NoSQL/command injection, path traversal and unsafe uploads, SSRF, mass assignment, data and server-path exposure, rate limits and money-flow logic (negative amounts, races, idempotency). Every finding has file:line evidence, the triggering request, severity, OWASP API Top 10 + CWE mapping and a concrete fix; uncertain items are listed separately. Static and read-only: never attacks a running system. Trigger on \"audit the endpoints\", \"security review of the API\", \"is this route safe\", \"audita los endpoints\", \"revisa la seguridad de las rutas\", or /endpoint-security-audit.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Menendez2004"
-      },
-      "strict": false,
-      "skills": [
-        "./plugins/skills/endpoint-security-audit"
-      ],
-      "keywords": [
-        "security",
-        "audit",
-        "api",
-        "endpoints",
-        "owasp",
-        "appsec",
-        "code-review"
-      ]
-    },
-    {
-      "name": "clawd-pet",
-      "source": "./plugins/mods/clawd-pet",
-      "description": "Clawd, the Claude pet from the desktop app, sits right above the Claude Code CLI prompt, on the right, with its laptop: it waves when you are around, turns sideways, pulls its laptop out and types with sparks flying while Claude works, wears a hard hat in plan mode, brings a smaller helper in its own color next to it for each running subagent (glasses for research, a blue hard hat for planning, a teal laptop for coding), gets knocked out when a command fails, and falls asleep with a floating \"Zzz\" when you stop typing (60 s by default, set idleSeconds in /config). Type anything to wake it; /pet hides or shows it, and /pet color (or /config) changes its color: a palette name or any hex.",
-      "version": "1.12.0",
-      "author": {
-        "name": "Menendez2004"
-      },
-      "keywords": [
-        "pet",
-        "mod",
-        "companion",
-        "clawd",
-        "fun",
-        "idle"
       ]
     }
   ]

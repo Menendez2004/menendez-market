@@ -18,7 +18,7 @@ user-invocable: true
 argument-hint: "<endpoint, feature, branch or handoff file>"
 allowed-tools: Read Glob Grep Edit Write Bash
 metadata:
-  version: 2
+  version: 1
   category: documentation
   tags:
     - handoff
