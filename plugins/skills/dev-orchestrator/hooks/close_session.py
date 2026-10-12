@@ -3,11 +3,12 @@
 
 The Orchestrator starts each terminal Task Agent with ORCH_RESULT set to the
 absolute path of the step's result file. When that agent's turn ends and the
-result file, written during this session, says `Complete` or `Failed`, the
-step is done: this hook ends the `claude` process a moment later, so the
-terminal tab/window/pane it runs in closes by itself. A `Blocked` result (the
-agent escalated and waits for the Lead in this terminal) or no result yet
-leaves the session open.
+result file, written during this session, says `Complete`, `Failed` or
+`Blocked`, the agent is done: this hook ends the `claude` process a moment later, so the
+terminal tab/window/pane it runs in closes by itself. A `Blocked` result
+closes it too: the Lead never answers in a Task Agent's terminal; the
+Orchestrator asks in the main session and relaunches the step. No result
+yet leaves the session open.
 
 It does nothing outside a Task Agent (no ORCH_RESULT), when ORCH_KEEP_OPEN=1,
 or on platforms without `ps` (Windows). Any error exits 0 silently: it never
@@ -22,7 +23,7 @@ import subprocess
 import sys
 import time
 
-CLOSING_STATUSES = {"complete", "failed"}
+CLOSING_STATUSES = {"complete", "failed", "blocked"}
 STATUS = re.compile(r"^\s*-?\s*Status:\s*\**\s*(\w+)", re.IGNORECASE | re.MULTILINE)
 # Seconds between the turn ending and the session closing, so Claude Code
 # finishes its own Stop handling first.
