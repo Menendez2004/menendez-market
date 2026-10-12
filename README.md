@@ -13,6 +13,7 @@ Marketplace de plugins para Claude Code.
 /plugin install qa@menendez-market
 /plugin install unit-test-generator@menendez-market
 /plugin install api-handoff@menendez-market
+/plugin install endpoint-security-audit@menendez-market
 /plugin install clawd-pet@menendez-market
 ```
 
@@ -27,6 +28,7 @@ Marketplace de plugins para Claude Code.
 | `clawd-pet` | Mod (no es una skill): Clawd, la mascota de Claude, vive justo encima del prompt del CLI, a la derecha, con su laptop. Saluda cuando estás presente, teclea en su laptop mientras Claude trabaja, se pone casco en modo plan, trae un ayudante más pequeño y de su mismo color por cada subagente que esté corriendo (con lentes si investiga, con casco azul si planea, con su laptop verde azulada si programa), queda noqueado cuando falla un comando y se duerme con un "Zzz" flotando cuando dejas de escribir (60 s por defecto; cámbialo con `idleSeconds` en `/config`). Escribe cualquier cosa para despertarlo; `/pet` lo oculta o lo muestra, y `/pet color <nombre o #hex>` (o `/config`) le cambia el color: `orange`, `blue`, `green`, `purple`, `pink`, `red`, `yellow`, `gray` o cualquier hexadecimal. |
 | `unit-test-generator` | Genera unit tests estrictos y aislados con el runner, la librería de mocks y las factories que ya usa el repo. Los datos salen de Faker o de factories (nunca objetos escritos a mano), con semilla fija, patrón AAA y casos de éxito, ramas, entradas inválidas, límites, errores y efectos secundarios. Exige al menos 90% de coverage (líneas, sentencias, ramas y funciones) en la unidad probada. Nunca modifica código de producción: reporta los bugs que encuentra. |
 | `api-handoff` | Escribe e implementa documentos de handoff (Markdown) entre frontend y backend. Para frontend: el endpoint que debe consumir; para backend: el endpoint que debe construir. Cada endpoint lleva su finalidad, método y ruta completa, auth, parámetros, headers, el body exacto (tabla de campos + ejemplo JSON que deben coincidir), todas las respuestas de éxito y error, efectos secundarios y criterios de aceptación verificables, todo extraído del código real (lo que no está decidido queda como `TBD` + pregunta abierta). Usa una plantilla fija con front matter YAML e incluye un script validador, para que cualquier otra sesión de Claude pueda implementarlo tal cual y reportar diferencias con el contrato. |
+| `endpoint-security-audit` | Auditoría de seguridad de caja blanca de los endpoints de una API y de las funciones que usan sus rutas. Arma el mapa de rutas (método, ruta completa, handler, cadena de middleware y auth) con un script incluido, y sigue cada dato del request por el handler y por cada servicio, repositorio y helper que llama. Revisa autenticación, autorización por objeto y por función (BOLA/IDOR, BFLA), inyección (SQL, NoSQL, comandos), path traversal y subida de archivos, SSRF, mass assignment, exposición de datos y rutas del servidor, rate limits y lógica de dinero (montos negativos, condiciones de carrera, idempotencia). Cada hallazgo lleva `archivo:línea`, el request que lo dispara, severidad, OWASP API Top 10 + CWE y la corrección; lo que no se puede confirmar va aparte. Solo lee código: nunca ataca un sistema en ejecución. |
 
 ## Estructura
 
@@ -44,13 +46,14 @@ plugins/
       qa-personality-builder/ # SKILL.md + references/, rules/
     unit-test-generator/    # SKILL.md + references/, rules/
     api-handoff/            # SKILL.md + references/ (plantilla, ejemplos), rules/, scripts/validate_handoff.py
+    endpoint-security-audit/ # SKILL.md + references/ (descubrimiento de rutas, sinks, OWASP, plantilla), rules/, scripts/list_routes.py
   mods/
     clawd-pet/              # .claude-plugin/plugin.json + hooks/register.tsx, types/, tests/
 ```
 
 Cada entrada de `marketplace.json` usa `"strict": false` y declara sus skills con
 `"skills": [...]`. `dev-orchestrator` carga solo su skill (sus agentes
-`orch-planner` y `orch-researcher`, y su hook de ruteo), `unit-test-generator` y `api-handoff` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
+`orch-planner` y `orch-researcher`, y su hook de ruteo), `unit-test-generator`, `api-handoff` y `endpoint-security-audit` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
 juntas, porque `qa-orchestrator` lanza a las demás.
 
 Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` y agrega una
