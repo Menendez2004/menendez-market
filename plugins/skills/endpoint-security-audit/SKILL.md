@@ -188,9 +188,11 @@ lives in a gateway, a DB policy, a library you cannot read), it goes under
    findings ordered by severity (`rules/rpt-severity.md`), then Needs
    verification, then routes reviewed with no findings (so the reader knows
    they were covered, not skipped).
-2. Save to `security/audits/YYYY-MM-DD-<scope-slug>.md` unless the repo
-   already has an audit or security docs folder, or the user asked for the
-   report only in chat. Do not commit it; the user decides.
+2. Always save to `.dev/security-audit/YYYY-MM-DD-<scope-slug>.md`,
+   relative to the project root. Create `.dev/security-audit/` if it does
+   not exist. Never save audits anywhere else (`docs/`, `security/`, the
+   repo root, an existing audit folder). Do not commit it; the user
+   decides.
 3. Reply with the short summary in **Output Format** and the file path.
 
 Only if the user asks you to fix the findings: change code one finding at
