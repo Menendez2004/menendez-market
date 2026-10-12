@@ -134,14 +134,14 @@ so finished steps do not pile up as open tabs:
 1. The Task Agent writes its result (`.result.md.tmp`, then `mv`) and ends
    its turn.
 2. The plugin's Stop hook (`hooks/close_session.py`) runs. If `ORCH_RESULT`
-   is set and that result, written during this session, says `Complete` or
-   `Failed`, it ends the `claude` process two seconds later.
+   is set and that result, written during this session, says `Complete`,
+   `Failed` or `Blocked`, it ends the `claude` process two seconds later.
 3. `claude` exits, `; exit 0` ends the shell, and the terminal closes the
    tab/window/pane (tmux closes the window, a detached tmux session ends).
 
-It stays open when the step is `Blocked` (the agent escalated and waits for
-the Lead to answer in that terminal; once the Lead answers and the agent
-replaces the result with `Complete`, it closes then), when there is no
+A `Blocked` session closes too: the Lead never answers in a Task Agent's
+terminal. The Orchestrator asks the question in the main session and
+relaunches the step with the answer. It stays open only when there is no
 result yet, and when the only result is an older attempt's. Nothing is lost
 by closing: the result file holds everything the Orchestrator needs, and
 the transcript stays available with `claude --resume` from the step's
@@ -237,8 +237,8 @@ dominates a small step. A step the dependency map marks **inline**
   and result file. The only differences: no terminal name, and it cannot
   spawn Research Sub-agents (inline agents cannot nest), so it relies on
   `.dev/research/` and its own targeted reads.
-- It cannot talk to the Lead directly. On anything that needs the Lead, it
-  writes a `Blocked` result with the `escalate_to_lead` payload and stops;
+- Like a terminal Task Agent, it never talks to the Lead. On anything that
+  needs the Lead, it writes a `Blocked` result with the `escalate_to_lead` payload and stops;
   the Orchestrator escalates in the main session, logs the answer in
   `.dev/tasks/_decisions.md`, and relaunches the step (inline or in a
   terminal) with a `## Previous attempt` section holding the answer.

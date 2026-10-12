@@ -136,8 +136,7 @@ shown to the Lead (references/parallelization.md).>
   key findings of that step's research). Never paste the whole scratchpad
   or the chat history into a brief.
 - When merging a result file, keep the handoff short: status, files touched,
-  one line per research conclusion, and the notes for next steps. Merge any
-  `Lead decisions` into the `Decisions Log`.
+  one line per research conclusion, and the notes for next steps.
 - **After** every result: merge it, append to `Decisions Log` if a Lead
   decision was involved, touch the result's `.merged` marker, and rewrite
   `## State`.
