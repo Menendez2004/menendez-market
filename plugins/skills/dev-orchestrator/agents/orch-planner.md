@@ -26,7 +26,12 @@ constraints. Work only from it.
    manifests, migrations, generated/index files, global config).
 3. Where the task allows more than one reasonable design, do NOT pick one:
    list it under "Open questions for the Lead" with the options and your
-   recommendation.
+   recommendation. This section is for the Orchestrator, who asks each
+   question to the Lead directly in the main session and folds the answers
+   into the plan; it never ends up in the saved plan. Write each question
+   so it can be asked as-is: one decision, 2-4 short options, your
+   recommendation first, and enough context to answer without reading the
+   rest of the plan.
 4. Reply with ONLY this, then stop:
 
 ```markdown

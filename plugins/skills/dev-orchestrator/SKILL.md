@@ -122,8 +122,14 @@ a plan draft. Do not draft the plan yourself. Alternatively, when the task
 is too open-ended to plan, ask the Lead to supply one via
 `escalate_to_lead`.
 
-Show the draft to the Lead together with the Planner's open questions
-(batched, per step 10). A proposed plan is a **draft**: the Lead must
+The Planner's open questions are for you to **ask**, not to pass along in
+a document: before showing the draft, ask every one of them to the Lead
+directly in this session (batched `AskUserQuestion`, per step 10), with
+the Planner's recommendation as the first option. Fold the answers into
+the steps and record each one under the plan's `## Lead decisions` and in
+`.dev/tasks/_decisions.md`. Never save, show or hand off a plan that still
+has an "Open questions" section or unanswered questions in it. Then show
+the draft. A proposed plan is a **draft**: the Lead must
 approve it before it counts as the plan. Record it with `Source:
 Planner-proposed (orch-planner, Opus), approved by Lead on <date>`. See
 `references/models.md`.
@@ -215,9 +221,9 @@ ordering constraints.
      is using, named exactly `orch-s[N]-[short-name]` (kebab-case, e.g.
      `orch-s2-ratelimit`), and start `claude --model opus` in the step's
      worktree on the brief, with `--add-dir <ROOT>/.dev` and `ORCH_RESULT`
-     set to the step's result path. The session closes by itself once the
-     step is `Complete` or `Failed`; a `Blocked` one stays open for the
-     Lead.
+     set to the step's result path. The session closes by itself once it
+     writes its result (`Complete`, `Failed` or `Blocked`): the Lead never
+     answers questions there.
      **inline** steps: start the Task Agent with the inline `Agent` tool on
      the same brief, told to work only inside its worktree. See
      `references/terminal-launch.md`.
@@ -237,10 +243,11 @@ ordering constraints.
      `references/terminal-launch.md` section 5.
   4. `Blocked` + `needs-file`: relaunch that step once no running step owns
      the file, instead of letting two agents edit it. Any other `Blocked`,
-     or `Failed`: escalate to the Lead and hold only the steps that depend
-     on it; independent steps keep running. The step's worktree is kept
-     until it is relaunched or the Lead drops it; nothing from it reaches
-     the Lead's tree. See `references/parallelization.md` section 5.
+     or `Failed`: ask the Lead in this session (step 10), and hold only the
+     steps that depend on it; independent steps keep running. Relaunch a
+     `Blocked` step with the answer in its `## Previous attempt` section.
+     The step's worktree is kept until it is relaunched or the Lead drops
+     it; nothing from it reaches the Lead's tree. See `references/parallelization.md` section 5.
   5. When every step is done, `git worktree prune` and remove the empty
      `<parent>/.<project>-orch/` directory. Remove only worktrees you
      created (`references/worktrees.md` section 8).
@@ -302,14 +309,20 @@ any of:
 - **any git operation that mutates shared state** -- `commit`, `push`,
   merge, or opening a PR. These are exclusively the Lead's action.
 
-Task Agents escalate from their own terminal (the Lead can see it) and mark
-the step `Blocked` in their result file. Inline Task Agents cannot reach the
-Lead: they write the payload in a `Blocked` result and you escalate it.
-Research Sub-agents never escalate: they report the open question to their
-Task Agent.
+**Every question reaches the Lead here, in the main session, and only
+from you.** Ask it directly (on Claude Code, with `AskUserQuestion`); never
+leave it in a document for the Lead to find -- not in a plan, the
+scratchpad, a brief or a result. Any other session that needs the Lead
+relays the question to you: Task Agents (terminal or inline) never ask in
+their own session; they write the `escalate_to_lead` payload in a `Blocked`
+result and stop, and you ask the Lead, log the answer in
+`.dev/tasks/_decisions.md` and relaunch the step with it. The Planner and
+Research Sub-agents return their open questions in their reply (Research
+Sub-agents to their Task Agent, which relays them the same way).
 
-When several escalations are pending for you at once (plan gaps found in
-validation, several inline steps blocked, failed checks), batch them into a
+When several escalations are pending for you at once (the Planner's open
+questions, plan gaps found in validation, several steps blocked, failed
+checks), batch them into a
 single message to the Lead instead of asking one by one. Steps not blocked
 keep running meanwhile.
 
