@@ -11,7 +11,7 @@ tags:
 Run the validator on every handoff you write, revise or receive:
 
 ```bash
-python3 <skill-dir>/scripts/validate_handoff.py docs/handoffs/<file>.handoff.md
+python3 <skill-dir>/scripts/validate_handoff.py .dev/handoffs/<file>.handoff.md
 ```
 
 (`<skill-dir>` is the directory that contains this skill's `SKILL.md`.)
