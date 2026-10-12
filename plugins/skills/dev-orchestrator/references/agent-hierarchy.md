@@ -186,7 +186,6 @@ Agents actually read.)
 - needs-file: <path, only if Blocked because a file outside your owned files must change>
 - Files touched: <paths>
 - Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no. Not the full synthesis.>
-- Lead decisions: <escalations the Lead answered in this terminal, question -> answer, or none>
 - Open questions / escalations: <none, or the escalate_to_lead payload>
 - Notes for next steps: <at most ~5 lines that dependent steps need (new APIs, names, contracts)>
 ```
