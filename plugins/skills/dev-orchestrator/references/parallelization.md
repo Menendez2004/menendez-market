@@ -152,12 +152,12 @@ Record the map, the preview and the cap in the scratchpad's
   not overlap, launch with the existing research; the brief still lists
   what completed since.
 - **Lead decisions reach running steps.** Whenever a Lead decision is logged
-  (from a result's `Lead decisions` or from an escalation you raised),
+  (from an escalation you asked the Lead in the main session),
   append it to `.dev/tasks/_decisions.md` right away. Task Agents re-read
   that file before writing their result. If the decision plausibly affects
-  a step that is already running, tell the Lead which step and why, so they
-  can also answer in that step's terminal. When that step's result arrives,
-  check it against the decision before launching its dependents.
+  a step that is already running, tell the Lead which step and why. When
+  that step's result arrives, check it against the decision before
+  launching its dependents (relaunch it if it went against the decision).
 - **Every relaunch carries a `## Previous attempt` section** (template in
   `references/agent-hierarchy.md`) and starts in a fresh worktree with the
   earlier attempt's partial work carried over
@@ -172,12 +172,13 @@ Record the map, the preview and the cap in the scratchpad's
   Wait until no running step owns the path, add it to the step's owned
   files, log it in the scratchpad, and relaunch the step with a
   `## Previous attempt` section.
-- **Any other `Blocked`, or `Failed`**: surface it to the Lead, and hold
-  only the steps that depend on it (directly or transitively). Steps that
-  do not depend on it keep running, and new independent steps keep
-  launching. If the Lead answers in the Task Agent's terminal, that agent
-  continues and replaces its result file; the orchestrator then treats it
-  like any new result.
+- **Any other `Blocked`, or `Failed`**: ask the Lead directly in the main
+  session (`AskUserQuestion` on Claude Code, batched with any other pending
+  question), and hold only the steps that depend on it (directly or
+  transitively). Steps that do not depend on it keep running, and new
+  independent steps keep launching. Once the Lead answers, log it in
+  `.dev/tasks/_decisions.md` and relaunch the step with the answer in its
+  `## Previous attempt` section.
 - Execution halts completely only when nothing is running and every
   remaining step depends on a `Blocked` or `Failed` step.
 - Final checks still run once, after every step is `Complete`

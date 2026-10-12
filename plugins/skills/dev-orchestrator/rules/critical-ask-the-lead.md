@@ -33,6 +33,19 @@ Then it halts and waits for the Lead's reply before writing any code for
 step 3.
 ```
 
+**Incorrect (the question is written down instead of asked):**
+
+```
+The Planner returns three open questions. The orchestrator saves them
+under "## Open questions for the Lead" in .dev/plans/<file>.md and tells
+the Lead "the plan is ready, see the open questions". Or a Task Agent in
+its own terminal prints the question there and waits.
+```
+
+The Lead has to go find the decisions. Ask them directly, in the main
+session, with `AskUserQuestion` on Claude Code; a Task Agent relays its
+question through a `Blocked` result so the Orchestrator asks it there.
+
 **Why it matters:** The entire premise of this skill is that architectural
 and ambiguous-requirement decisions belong to the Lead Developer, not the
 agent. An agent that fills gaps with its own best guess -- even a reasonable
