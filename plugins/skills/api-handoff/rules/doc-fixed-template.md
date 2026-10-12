@@ -21,8 +21,8 @@ Every handoff is a copy of `references/handoff-template.md`:
 - Sections that do not apply stay, with `None.` (or `No body.` for
   `#### Body`) under them. An empty or missing section means "forgot";
   `None.` means "checked".
-- File name `YYYY-MM-DD-<feature-slug>.handoff.md`, in the repo's handoff
-  folder or `docs/handoffs/`.
+- File name `YYYY-MM-DD-<feature-slug>.handoff.md`, always in
+  `.dev/handoffs/` at the project root (create it if missing).
 
 **Incorrect:**
 

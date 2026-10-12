@@ -115,7 +115,7 @@
       "name": "api-handoff",
       "source": "./",
       "description": "Write and implement API handoff documents (Markdown) between frontend and backend. Backend → Frontend: documents the endpoint the frontend must consume. Frontend → Backend: specifies the endpoint the backend must build. Every endpoint gets its purpose, method and full path, auth, params, headers, the exact request body (field table + JSON example that must match), every success and error response, side effects and testable acceptance criteria, all extracted from real code (never invented; unknowns become TBD + open questions). Uses a fixed template with YAML front matter and ships a validator script, so any other Claude session can implement the handoff exactly and report contract mismatches. Trigger on \"handoff\", \"write a handoff for the frontend\", \"handoff to backend\", \"implement this handoff\", or /api-handoff.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": {
         "name": "Menendez2004"
       },
