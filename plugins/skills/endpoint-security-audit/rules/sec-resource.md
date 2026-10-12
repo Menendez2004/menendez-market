@@ -24,6 +24,10 @@ Priority routes:
   `limits`, `MAX_CONTENT_LENGTH`)
 - expensive work (reports, exports, image processing, regex on user input)
   → limits or queues
+- crash paths → `async` handlers in Express 4 with no `try/catch` or
+  wrapper: a request that makes the DB or an outbound call throw (bad
+  `limit`, missing field, unreachable URL) raises an unhandled rejection,
+  which on Node 15+ kills the process — a one-request denial of service
 
 If a limit may live outside the repo (API gateway, WAF, CDN), list the
 route under Needs verification rather than as a finding.

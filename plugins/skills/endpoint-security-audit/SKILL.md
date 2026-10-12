@@ -288,6 +288,14 @@ User: "Document this endpoint for the frontend." (use api-handoff)
   gateway enforces it outside the repo, list it under Needs verification
 - Expected behavior: Each route's auth column is a fact, not a guess
 
+- Error: Writing the report file is refused (read-only session, or a
+  harness that wants subagents to answer in text)
+- Solution: Do not work around it with shell redirection. Return the
+  complete report, in the template's structure, in your reply, followed by
+  the summary block, and say the file was not written
+- Expected behavior: The caller still receives every finding with its
+  evidence and trigger
+
 - Error: The handler calls code you cannot read (a compiled package, an
   external service)
 - Solution: Audit up to the boundary, state what the boundary must
