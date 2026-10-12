@@ -145,9 +145,10 @@ shape). Everything the backend must decide goes under **Open questions**.
 
 ### 4. Save and validate
 
-1. Save to the repo's handoff folder if it has one (search for
-   `handoffs/`, `docs/handoff*`, `*.handoff.md`); otherwise
-   `docs/handoffs/YYYY-MM-DD-<feature-slug>.handoff.md`.
+1. Always save to `.dev/handoffs/YYYY-MM-DD-<feature-slug>.handoff.md`,
+   relative to the project root. Create `.dev/handoffs/` if it does not
+   exist. Never save handoffs anywhere else (`docs/`, the repo root, an
+   existing `handoffs/` folder).
 2. Run `python3 <skill-dir>/scripts/validate_handoff.py <file>` and fix
    every error it reports (`rules/verify-validate.md`).
 3. If `status: ready` and there are open questions, the validator fails:
@@ -239,7 +240,7 @@ In Mode C, replace the last three lines with:
 - **Backend → Frontend:** "Write the handoff for the front for the new
   orders endpoint" → Mode A reads `orders.controller.ts`,
   `create-order.dto.ts` and the global exception filter, writes
-  `docs/handoffs/2026-10-09-create-order.handoff.md` with
+  `.dev/handoffs/2026-10-09-create-order.handoff.md` with
   `POST /api/v1/orders`, its body table, 201/400/401/409/422 responses and
   6 acceptance criteria for the checkout screen.
 - **Frontend → Backend:** "The product page needs reviews, write the
@@ -247,7 +248,7 @@ In Mode C, replace the last three lines with:
   existing `GET /products/:id` conventions, writes a `draft` handoff for
   `GET /api/v1/products/{productId}/reviews` with cursor pagination and 2
   open questions (sort order, max page size).
-- **Implement:** "Implement `docs/handoffs/2026-10-09-create-order.handoff.md`"
+- **Implement:** "Implement `.dev/handoffs/2026-10-09-create-order.handoff.md`"
   → Mode C validates it, adds `createOrder()` to the API client with the
   documented types, maps 409 and 422 to the specified UI states, and
   reports 6/6 acceptance criteria met.
