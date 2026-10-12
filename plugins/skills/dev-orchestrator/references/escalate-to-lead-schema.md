@@ -23,26 +23,38 @@ harness.
 
 ### Who escalates, and where
 
-- **Orchestrator (Level 0)**: escalates in the Lead's main session.
-- **Task Agent (Level 1)**: escalates in its own terminal
-  (`orch-s[N]-[short-name]`), where the Lead can answer it
-  directly, and also writes `Status: Blocked` plus the JSON payload to its
-  result file so the Orchestrator knows the step is halted.
-- **Inline Task Agent (Level 1, small steps)**: cannot reach the Lead. It
-  writes `Status: Blocked` plus the JSON payload to its result file and
-  stops; the Orchestrator escalates in the Lead's main session and
-  relaunches the step with the answer in its brief.
+The Lead answers questions in **one place: the main session**, and only
+the Orchestrator asks them there. A question written into a document (a
+plan, the scratchpad, a brief, a result) is not an escalation: the Lead
+does not read those files to find decisions waiting on them. Every other
+session relays its question to the Orchestrator, which asks it directly.
+
+- **Orchestrator (Level 0)**: asks in the Lead's main session, directly
+  (on Claude Code, `AskUserQuestion`; see below).
+- **Planner Agent (Level 1)**: returns its open questions in its reply.
+  The Orchestrator asks them before saving or showing the plan, and only
+  the answers go into the plan file.
+- **Task Agent (Level 1, terminal or inline)**: never asks in its own
+  session. It writes `Status: Blocked` plus the JSON payload to its result
+  file and stops (a terminal session then closes by itself). The
+  Orchestrator asks the Lead in the main session, logs the answer in
+  `.dev/tasks/_decisions.md`, and relaunches the step with the answer in
+  its `## Previous attempt` section.
 - **Research Sub-agent (Level 2)**: never escalates. It reports the open
-  question in its synthesis; the Task Agent decides whether to escalate.
+  question in its synthesis; the Task Agent relays it as above if it
+  needs the Lead.
 
-### Claude Code fast path
+### Claude Code: always `AskUserQuestion`
 
-On Claude Code specifically, prefer presenting the same halt-and-wait
-contract through the native `AskUserQuestion` tool instead of raw JSON in
-chat, when the escalation has enumerable `options` -- it gives the Lead a
-structured choice UI instead of free text. The JSON block is still the
-canonical, portable form; `AskUserQuestion` is a presentation-layer
-optimization for one harness, not a replacement for the protocol.
+On Claude Code, the Orchestrator presents every escalation with
+enumerable `options` through the native `AskUserQuestion` tool, so the
+Lead picks from a structured choice in the terminal instead of reading a
+list of questions in chat or in a file. Put the recommended option first
+with "(Recommended)" in its label, keep labels short, and put the
+trade-off in each option's description. Only an escalation with no
+concrete options (a value to type in) goes as plain text. The JSON block
+remains the canonical, portable form for result files and for harnesses
+without `AskUserQuestion`.
 
 ### Batching
 
@@ -55,8 +67,8 @@ then a single plain-language summary that numbers the questions. With
 the rest into the next call). Each escalation still halts only what it
 blocks: steps that do not depend on any of them keep running.
 
-Task Agents in terminals keep escalating in their own terminal; they are not
-batched, because the Lead answers them there.
+Escalations relayed by Task Agents (terminal or inline) are batched with
+the rest, since they all reach the Lead through the Orchestrator.
 
 ## Schema
 

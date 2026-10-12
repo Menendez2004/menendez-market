@@ -105,7 +105,15 @@ for a simple task) is saved as its own file:
 
 1. <step, one or two sentences>
 2. ...
+
+## Lead decisions
+
+- <question the Orchestrator asked the Lead> -> <the Lead's answer>  (or "none")
 ```
+
+A saved plan never has an "Open questions" section: the Orchestrator asks
+the Planner's open questions to the Lead in the main session before saving
+or showing the plan (`SKILL.md` step 3), and only the answers land here.
 
 The scratchpad's `## Plan` section holds the same numbered steps plus a
 `File: .dev/plans/<file>` line, so a resumed session can find it.
