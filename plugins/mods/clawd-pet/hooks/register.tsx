@@ -337,9 +337,13 @@ function smallBrimRow(): Seg[] {
 // the keys: the screen tilted back, the keyboard at its feet, sparks above.
 //
 //   . # # # # # .     head
-//   . E # E # # .     eyes toward the front
-//   A # # # # # .     front arm (at rest)
-//   a # . # . # .     front arm (on the keys)
+//   A E # E # # .     eyes toward the front, front arm (at rest)
+//   a # # # # # .     front arm (on the keys, level with them)
+//   . # . # . # .     legs
+//
+// Typing, the front arm drops one pixel onto the keys and back up, like
+// Clawd's own; it never reaches down to the legs, so it taps the keyboard,
+// not the floor.
 function smallCoderRows(tick: number): Seg[][] {
   const isArmDown = tick % 2 === 1
   const screen: Seg = { text: '╲', color: tick % 2 === 1 ? SCREEN_DIM : SCREEN_GLOW, bold: true }
@@ -350,8 +354,8 @@ function smallCoderRows(tick: number): Seg[][] {
       ...spark.map(ch => (ch === '✻' ? { text: ch, color: BODY, bold: true } : ch === '·' ? { text: ch, color: SPARK_YELLOW, bold: true } : { text: ch })),
       { text: '       ' },
     ],
-    [screen, { text: '  ' }, { text: ' ' }, helperEye(), helperBody('█'), helperEye(), helperBody('██ ')],
-    [{ text: ' ' }, keys, helperBody(`${isArmDown ? '▄' : '▀'}█▀█▀█ `)],
+    [screen, { text: '  ' }, helperBody(isArmDown ? ' ' : '▄'), helperEye(), helperBody('█'), helperEye(), helperBody('██ ')],
+    [{ text: ' ' }, keys, helperBody(`${isArmDown ? '▀' : ' '}█▀█▀█ `)],
   ]
 }
 
