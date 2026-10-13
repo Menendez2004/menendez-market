@@ -446,12 +446,12 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   }
 
   // Alone, no glasses, no hat, no laptop open.
-  expect(await look(/\(/)).toBeUndefined()
+  expect(await look(/^━$/)).toBeUndefined()
 
   await ($.agent as any).spawn({ prompt: 'look around', subagentType: 'Explore' })
   await clock.advance(250)
-  expect(await look(/^\($/)).toBeDefined() // the glasses' rim
-  expect(await look(/^─$/)).toBeDefined() // the bridge
+  expect(await look(/^▐$/)).toBeDefined() // the glasses' rim
+  expect(await look(/^━$/)).toBeDefined() // the bridge
   expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
 
   await ($.agent as any).spawn({ prompt: 'plan it', subagentType: 'Plan' })
@@ -467,7 +467,7 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   // When a subagent finishes, its helper leaves.
   await finish($, 'r1')
   await clock.advance(250)
-  expect(await look(/^─$/)).toBeUndefined()
+  expect(await look(/^━$/)).toBeUndefined()
   expect(await look(/^▄▄$/)).toBeDefined()
 
   await ($.classic as any).SubagentStop({ agent_id: 'p1', agent_type: 'Plan', stop_hook_active: false, agent_transcript_path: '/tmp/t' })
@@ -519,7 +519,9 @@ test("helpers are smaller, in Clawd's color, with their own hat and laptop color
   // Smaller: a seven-pixel body with legs one row, not Clawd's nine.
   expect(await find(/^ █▀█▀█ $/)).toBeDefined()
   // Same body color as Clawd: the glasses sit on it.
-  expect((await find(/^\($/))?.props?.backgroundColor).toBe('#E8713A')
+  expect((await find(/^▐$/))?.props?.backgroundColor).toBe('#E8713A')
+  // The lenses are light glass, so they stand out from the body.
+  expect((await find(/^[•‹›]$/))?.props?.backgroundColor).toBe('#D6ECFF')
   // Only the gear changes color: a blue hard hat, a teal laptop.
   expect((await find(/^▄▄$/))?.props?.color).toBe('#3D8BFD')
   expect((await find(/^▀▀$/))?.props?.color).toBe('#2BB3A3')
