@@ -463,6 +463,16 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   await ($.agent as any).spawn({ prompt: 'write it', subagentType: 'general-purpose' })
   await clock.advance(250)
   expect(await look(/╲/)).toBeDefined() // the coder's open laptop
+  // The coder taps the keys: its arm drops level with the keyboard and back
+  // up, never down to the floor by its legs.
+  const strokes = new Set<string>()
+  for (let i = 0; i < 4; i++) {
+    await clock.advance(250)
+    if (await look(/^▀█▀█▀█ $/)) strokes.add('down')
+    if (await look(/^ █▀█▀█ $/)) strokes.add('up')
+    expect(await look(/^▄█▀█▀█ $/)).toBeUndefined()
+  }
+  expect([...strokes].sort()).toEqual(['down', 'up'])
 
   // When a subagent finishes, its helper leaves.
   await finish($, 'r1')
