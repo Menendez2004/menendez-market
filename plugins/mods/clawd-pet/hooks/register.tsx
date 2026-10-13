@@ -37,6 +37,7 @@ const SCREEN_DIM = '#8FB4DA'
 const HAT_YELLOW = '#E8B04B'
 const HAT_BADGE = '#B07A1E'
 const GLASSES = '#1E1E1E'
+const LENS = '#D6ECFF'
 const THINK_BLUE = '#7FB8F0'
 // The helpers wear Clawd's color too; only their gear differs: a blue hard
 // hat and a teal laptop.
@@ -299,13 +300,17 @@ function smallLegs(isStepping = false): Seg[] {
   return [helperBody(isStepping ? ' ▀█▀█▀ ' : ' █▀█▀█ ')]
 }
 
-// A researcher's face: round glasses over both eyes, joined by a bridge, the
-// eyes glancing left and right as it reads.
+// A researcher's face: two light lenses, each a whole cell so they read as
+// glass at a glance, set in a thick dark frame (half-block rims on the
+// outside, a bridge between them), the eyes glancing left and right behind
+// the lenses as it reads.
+//
+//   # [ o ] = [ o ] #     rim ▐, lens, bridge ━, lens, rim ▌
 function glassesRow(tick: number): Seg[] {
   const frame = (text: string): Seg => ({ text, color: GLASSES, backgroundColor: BODY, bold: true })
   const look = ['•', '•', '‹', '•', '•', '›'][Math.floor(tick / 2) % 6] ?? '•'
-  const eye: Seg = { text: look, color: EYE_BLACK, backgroundColor: BODY, bold: true }
-  return [helperBody('▄'), frame('('), eye, frame('─'), eye, frame(')'), helperBody('▄')]
+  const lens: Seg = { text: look, color: EYE_BLACK, backgroundColor: LENS, bold: true }
+  return [helperBody('▄'), frame('▐'), lens, frame('━'), lens, frame('▌'), helperBody('▄')]
 }
 
 // A question mark floating over a researcher's head, moving one column every
