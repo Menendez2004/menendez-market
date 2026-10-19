@@ -70,6 +70,8 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - May modify code needed for that step (non-destructive changes only;
   destructive ones go through `escalate_to_lead`).
 - Never runs tests or checks; verification happens once at the end.
+- Creates no unit tests or other test files unless its step says so
+  (`rules/high-no-unrequested-tests.md`).
 - **Is allowed to** spawn Research Sub-agents via the inline `Agent` tool to
   investigate before editing, so exploration does not fill its own context.
 - Must not: launch other Task Agents, open terminals, touch other steps'
