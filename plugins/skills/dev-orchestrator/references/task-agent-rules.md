@@ -55,8 +55,11 @@ step number and short name from your brief.
   stop (other agents may be editing it right now).
 - Never commit, push, merge or open a PR. Leave changes uncommitted.
 - Never run tests, and do not run checks (lint, typecheck, build): the
-  Orchestrator runs checks once after the whole task. Writing test files is
-  fine if your step asks for it.
+  Orchestrator runs checks once after the whole task.
+- Do not create unit tests or any other test files, and do not edit
+  existing ones, unless your step explicitly says to. If your change will
+  clearly break an existing test, leave it and say so in "Notes for next
+  steps".
 - On ambiguity, an architectural choice, or any destructive action: do not
   ask the Lead here, terminal or inline. Write the escalate_to_lead payload
   (JSON with reason, context, options, blocking: true) to a Blocked result

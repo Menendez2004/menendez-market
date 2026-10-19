@@ -46,8 +46,9 @@ test run, that is the Lead's decision for that task only.
 
 **Rules:**
 
-- No agent in this skill runs tests. Writing or editing test files when a
-  plan step asks for it is allowed.
+- No agent in this skill runs tests. Writing or editing test files is
+  allowed only when the Lead asked for tests and a plan step says so
+  (`rules/high-no-unrequested-tests.md`).
 - Checks run once, by the Orchestrator, after every plan step is complete.
   Task Agents and Research Sub-agents never run them.
 - Failing checks are reported to the Lead with their output and the step

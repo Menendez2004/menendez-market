@@ -17,7 +17,7 @@ metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify, ponytail]
   status: draft
-  version: 12
+  version: 13
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -75,6 +75,7 @@ Orchestrator session itself, so run it with `/model opus`), and
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
 `rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
 `rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
+`rules/high-no-unrequested-tests.md`,
 `rules/high-parallel-disjoint-writes.md`, `rules/high-worktree-isolation.md`,
 `rules/high-scoped-context.md`.
 
@@ -259,8 +260,10 @@ ordering constraints.
 ### 7. Final checks -- never tests
 
 No agent in this skill runs tests: not the Orchestrator, not a Task Agent,
-not a Research Sub-agent. Writing or editing test files is fine when a plan
-step asks for it; executing test suites is not.
+not a Research Sub-agent. Executing test suites is not allowed. Writing or
+editing test files is allowed only when the Lead asked for tests and a
+plan step says so: unless the Lead asks for tests, no agent creates unit
+tests (`rules/high-no-unrequested-tests.md`).
 
 Once, **after every plan step is complete**, the Orchestrator runs the
 project's fast checks (lint, format check, typecheck, build/compile, and the
@@ -341,6 +344,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-no-autonomous-git.md` -- no autonomous git/PR actions.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
+- `rules/high-no-unrequested-tests.md` -- no unit tests unless the Lead asks for tests.
 - `rules/high-parallel-disjoint-writes.md` -- parallel only for independent steps with disjoint writes.
 - `rules/high-worktree-isolation.md` -- each Task Agent works in its own worktree; only checked patches reach the Lead's tree.
 - `rules/high-scoped-context.md` -- each agent gets only the context its step needs.

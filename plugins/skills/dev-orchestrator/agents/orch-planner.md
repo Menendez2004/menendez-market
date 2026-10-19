@@ -57,4 +57,6 @@ constraints. Work only from it.
 ```
 
 Each step must be small enough for one Task Agent to do from a one-page
-brief. Do not include running tests as a step; writing test files is fine.
+brief. Do not include running tests as a step. Do not include writing
+tests (unit or other) as a step, or ask whether to add them, unless the
+Lead's task asks for tests.

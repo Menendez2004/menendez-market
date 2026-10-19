@@ -14,6 +14,7 @@ decision to the Lead Developer, instead of proceeding on its own judgment.
 Rules governing how finished work is verified.
 
 - `high-checks-not-tests.md`
+- `high-no-unrequested-tests.md`
 
 ## Agent Hierarchy
 
