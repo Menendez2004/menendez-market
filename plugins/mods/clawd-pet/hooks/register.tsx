@@ -36,8 +36,8 @@ const SCREEN_GLOW = '#CFE3F7'
 const SCREEN_DIM = '#8FB4DA'
 const HAT_YELLOW = '#E8B04B'
 const HAT_BADGE = '#B07A1E'
-const GLASSES = '#1E1E1E'
-const LENS = '#D6ECFF'
+const GLASSES = '#3B7DDD'
+const LENS = '#EAF4FF'
 const THINK_BLUE = '#7FB8F0'
 // The helpers wear Clawd's color too; only their gear differs: a blue hard
 // hat and a teal laptop.
@@ -300,24 +300,60 @@ function smallLegs(isStepping = false): Seg[] {
   return [helperBody(isStepping ? ' ▀█▀█▀ ' : ' █▀█▀█ ')]
 }
 
-// A researcher's face: two light lenses, each a whole cell so they read as
-// glass at a glance, set in a thick dark frame (half-block rims on the
-// outside, a bridge between them), the eyes glancing left and right behind
-// the lenses as it reads.
+// A researcher is drawn wider than the other helpers, 12×6 pixels, so its
+// big round glasses fit: two lenses with blue rims and white glass, joined at
+// the bridge, the temples running out over its arms, a pupil in each lens.
 //
-//   # [ o ] = [ o ] #     rim ▐, lens, bridge ━, lens, rim ▌
-function glassesRow(tick: number): Seg[] {
-  const frame = (text: string): Seg => ({ text, color: GLASSES, backgroundColor: BODY, bold: true })
-  const look = ['•', '•', '‹', '•', '•', '›'][Math.floor(tick / 2) % 6] ?? '•'
-  const lens: Seg = { text: look, color: EYE_BLACK, backgroundColor: LENS, bold: true }
-  return [helperBody('▄'), frame('▐'), lens, frame('━'), lens, frame('▌'), helperBody('▄')]
+//   . # G G G # # G G G # .     row 0  head, the tops of the rims
+//   G G W P W G G W P W G G     row 1  lenses and temples
+//   # G W P W G G W P W G #     row 2  lenses, arms
+//   # # G G G # # G G G # #     row 3  the bottoms of the rims, arms
+//   . # # # # # # # # # # .     row 4  body
+//   . # # . . # # . . # # .     row 5  three legs
+//
+// The pupils (P) glance left and right as it reads.
+const RESEARCHER_WIDTH = 12
+
+function researcherRows(tick: number): Seg[][] {
+  const pupil = [1, 1, 0, 1, 1, 2][Math.floor(tick / 2) % 6] ?? 1
+  const lens = [0, 1, 2].map(i => (i === pupil ? 'P' : 'W')).join('')
+  const art = [
+    '.#GGG##GGG#.',
+    `GG${lens}GG${lens}GG`,
+    `#G${lens}GG${lens}G#`,
+    '##GGG##GGG##',
+    '.##########.',
+    '.##..##..##.',
+  ]
+  const color = (pixel: string | undefined): string | undefined =>
+    pixel === '#' ? BODY : pixel === 'G' ? GLASSES : pixel === 'W' ? LENS : pixel === 'P' ? EYE_BLACK : undefined
+  return [0, 2, 4].map(row => halfBlocks(art[row] ?? '', art[row + 1] ?? '', color))
+}
+
+// Two pixel rows as one terminal row of half blocks: the upper pixel in the
+// top half of each cell, the lower one in the bottom half.
+function halfBlocks(upper: string, lower: string, color: (pixel: string | undefined) => string | undefined): Seg[] {
+  return [...upper].map((pixel, i) => {
+    const top = color(pixel)
+    const bottom = color(lower[i])
+    if (top === undefined && bottom === undefined) {
+      return { text: ' ' }
+    }
+    if (top === undefined) {
+      return { text: '▄', color: bottom, bold: true }
+    }
+    if (bottom === undefined || bottom === top) {
+      return { text: bottom === top ? '█' : '▀', color: top, bold: true }
+    }
+    return { text: '▀', color: top, backgroundColor: bottom, bold: true }
+  })
 }
 
 // A question mark floating over a researcher's head, moving one column every
 // half second.
 function thinkRow(tick: number): Seg[] {
-  const cells: Seg[] = Array.from({ length: 7 }, () => ({ text: ' ' }))
-  cells[2 + (Math.floor(tick / 2) % 4)] = { text: '?', color: THINK_BLUE, bold: true }
+  const cells: Seg[] = Array.from({ length: RESEARCHER_WIDTH }, () => ({ text: ' ' }))
+  cells[4 + (Math.floor(tick / 2) % 4)] = { text: '?', color: THINK_BLUE, bold: true }
   return cells
 }
 
@@ -361,7 +397,7 @@ function smallCoderRows(tick: number): Seg[][] {
 
 // One helper standing next to Clawd, three rows tall, each row the same width
 // at every tick: a coder at its laptop, a planner under its hard hat
-// marching in place, a researcher in glasses.
+// marching in place, a researcher in its big round glasses.
 function helperRows(kind: HelperKind, tick: number): Seg[][] {
   if (kind === 'code') {
     return smallCoderRows(tick)
@@ -369,7 +405,7 @@ function helperRows(kind: HelperKind, tick: number): Seg[][] {
   if (kind === 'plan') {
     return [smallHatRow(), smallBrimRow(), smallLegs(Math.floor(tick / 2) % 2 === 1)]
   }
-  return [thinkRow(tick), glassesRow(tick), smallLegs()]
+  return [thinkRow(tick), ...researcherRows(tick)]
 }
 
 // Writes the mood only when it changed, so an idle tick redraws nothing new.
@@ -729,10 +765,19 @@ export const register: Register = (on, options) => {
     const rows = e.props.maxRows >= 4 ? 4 : 3
 
     // The helpers stand to Clawd's left, as many as the band has room for
-    // (Clawd itself takes about 30 columns, each helper at most 11).
+    // (Clawd itself takes about 30 columns; a researcher 12 plus its margin,
+    // any other helper 10 plus its margin).
     const team = (await read($, helpers)) ?? []
-    const room = Math.max(0, Math.min(MAX_HELPERS, Math.floor((e.props.bodyColumns - 30) / 11)))
-    const shown = team.slice(0, room)
+    const shown: typeof team = []
+    let room = e.props.bodyColumns - 30
+    for (const helper of team) {
+      const width = (helper.kind === 'research' ? RESEARCHER_WIDTH : 10) + 1
+      if (shown.length >= MAX_HELPERS || width > room) {
+        break
+      }
+      shown.push(helper)
+      room -= width
+    }
     const extra = team.length - shown.length
     const fit = <T,>(column: T[]): T[] => column.slice(Math.max(0, column.length - rows))
 
