@@ -24,6 +24,15 @@ step number and short name from your brief.
   Research Sub-agents (subagent_type "dev-orchestrator:orch-researcher",
   no model parameter) with one question and a scope each. Inline Task
   Agents cannot spawn agents and use targeted reads instead.
+- If your brief's `## Code minimalism` section says ponytail is available,
+  load it before writing any code: invoke the skill by the name given, or
+  read the `SKILL.md` path given if that name is not in your skill list.
+  Use it to write the least code that does the step, never to change what
+  the step does: do not drop or shrink any part of the step, and keep
+  validation, error handling, security, accessibility and any test files
+  the step asks for. If it says part of the step should not be built, do
+  not skip it: escalate (Blocked result). If ponytail cannot be loaded,
+  continue without it.
 - If your brief has a `## Previous attempt` section, this step already ran
   once. Before editing, run `git status --short` and `git diff` in your
   worktree to see the earlier attempt's work that was carried over (if the
@@ -78,7 +87,7 @@ it to `.result.md`:
 - Status: Complete | Blocked | Failed
 - needs-file: <path, only if Blocked because a file outside your owned files must change>
 - Files touched: <paths>
-- Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no. Not the full synthesis.>
+- Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no; ponytail yes/no. Not the full synthesis.>
 - Open questions / escalations: <none, or the escalate_to_lead payload>
 - Notes for next steps: <at most ~5 lines that dependent steps need (new APIs, names, contracts)>
 ```
