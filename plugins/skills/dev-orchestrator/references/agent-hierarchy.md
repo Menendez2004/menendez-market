@@ -155,6 +155,12 @@ yes/no. Then: "Full synthesis: .dev/research/step-<N>-<short-name>.md", or
   the research, or "none">. Line numbers and symbols in those files may have
   moved: re-read them before relying on this research.
 
+## Code minimalism
+
+<"ponytail: available -- load it before writing code (skill <name> | file
+<path>), level <level>" or "ponytail: not available". From `## Environment`
+(`references/ponytail.md`).>
+
 ## Previous attempt (relaunches only)
 
 <Only when this step ran before (needs-file, Fix, relaunch after an inline
@@ -185,7 +191,7 @@ Agents actually read.)
 - Status: Complete | Blocked | Failed
 - needs-file: <path, only if Blocked because a file outside your owned files must change>
 - Files touched: <paths>
-- Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no. Not the full synthesis.>
+- Research used: <one line per Research Sub-agent: question -> one-line conclusion; graphify yes/no; ponytail yes/no. Not the full synthesis.>
 - Open questions / escalations: <none, or the escalate_to_lead payload>
 - Notes for next steps: <at most ~5 lines that dependent steps need (new APIs, names, contracts)>
 ```
