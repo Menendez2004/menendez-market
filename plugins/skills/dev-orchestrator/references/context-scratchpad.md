@@ -97,6 +97,7 @@ shown to the Lead (references/parallelization.md).>
 - Execution mode: <single session | multi-agent (sequential) | multi-agent (cap N)>
 - User terminal: <tmux | iTerm2 | Windows Terminal | ... | fallback: <how>>
 - graphify: <available (existing graph / skill / CLI) | not available>
+- ponytail: <available (skill <name> | file <path>), level <level> | not available>
 - Models: <planning / execution / research models actually used>
 - Worktrees: <on, ROOT=<path>, WTROOT=<path> | off (<reason>)>
 
@@ -117,7 +118,7 @@ shown to the Lead (references/parallelization.md).>
 - Worktree: <path> (base <snapshot sha>) | removed | none (worktrees off)
 - Integrated: <.dev/tasks/step-<N>-<short-name>.patch | not yet | rejected: <ownership | apply check>: <paths>>
 - Status: <Running | Complete | Blocked | Failed>
-- Result: <files touched, research used (graphify yes/no), notes>
+- Result: <files touched, research used (graphify yes/no, ponytail yes/no), notes>
 
 ## Final Checks
 

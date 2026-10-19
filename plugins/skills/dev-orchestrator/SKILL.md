@@ -15,9 +15,9 @@ description: >-
   task agents".
 metadata:
   category: assistant
-  tags: [orchestration, hitl, planning, workflow, multi-agent, graphify]
+  tags: [orchestration, hitl, planning, workflow, multi-agent, graphify, ponytail]
   status: draft
-  version: 11
+  version: 12
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -151,7 +151,9 @@ reads, and needs from other steps, plus any single-writer hotspot it touches
 (lockfiles, manifests, migrations, generated/index files, global config).
 First, if graphify is available but has no graph, ask the Lead once whether
 to build it now so every agent can use it (`references/graphify.md` section
-0). Then pin down footprints with read-only Research Sub-agents, one per
+0), and check once whether the `ponytail` code-minimalism skill is
+available, recording the result in `## Environment`
+(`references/ponytail.md` section 0). Then pin down footprints with read-only Research Sub-agents, one per
 step, **all launched in a single message** so they run in parallel, and
 save each synthesis to `.dev/research/step-[N]-[short-name].md` so the
 step's Task Agent starts from it instead of exploring again. Mark each step
@@ -189,7 +191,8 @@ ordering constraints.
 ### 6. Execute
 
 - **Single session**: you perform each plan step yourself, in order,
-  starting from its `.dev/research/` file. You may still use read-only
+  starting from its `.dev/research/` file. If ponytail is available, load
+  it before writing code (`references/ponytail.md`). You may still use read-only
   Research Sub-agents for what that research does not answer (they are then
   Level 1, still read-only and still unable to spawn).
 - **Multi-agent**: launch every ready step, one Task Agent per step, each
@@ -209,6 +212,7 @@ ordering constraints.
      output of the steps it needs, notes of indirect dependencies), the key
      findings of its research with which steps completed since it was
      taken, its worktree path and `ROOT` (all `.dev/` paths absolute), and
+     whether to load ponytail (`references/ponytail.md`), and
      a pointer to `_rules.md` -- never the rules text itself,
      never the full scratchpad and never the chat history. If steps
      completed since the research touched this step's files, refresh the
@@ -350,6 +354,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `references/terminal-launch.md` -- terminal detection, launch commands, background waiting, inline runner.
 - `references/worktrees.md` -- worktree preconditions, snapshot, creation, patch integration, relaunch, cleanup, resume.
 - `references/graphify.md` -- conditional graphify use by Research Sub-agents.
+- `references/ponytail.md` -- conditional ponytail use by code-writing agents (minimal code; the plan always wins).
 - `references/execution-modes.md` -- plan intake, triage, planning, mode routing.
 - `references/context-scratchpad.md` -- scratchpad and task file formats.
 - `references/escalate-to-lead-schema.md` -- escalation protocol + JSON schema.
