@@ -446,11 +446,11 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   }
 
   // Alone, no glasses, no hat, no laptop open.
-  expect(await look(/^ ██▀▀██▀▀██ $/)).toBeUndefined()
+  expect(await look(/^▄▀▀▀▀▀▄$/)).toBeUndefined()
 
   await ($.agent as any).spawn({ prompt: 'look around', subagentType: 'Explore' })
   await clock.advance(250)
-  expect(await look(/^ ██▀▀██▀▀██ $/)).toBeDefined() // the researcher, in its round glasses
+  expect(await look(/^▄▀▀▀▀▀▄$/)).toBeDefined() // the researcher, in its round glasses
   expect(await look(/^ +\? +$/)).toBeDefined() // wondering
   expect(await look(/^▀▀▀▀▀▀▀$/)).toBeUndefined()
 
@@ -477,7 +477,7 @@ test('each subagent brings its own helper: glasses to research, hard hat to plan
   // When a subagent finishes, its helper leaves.
   await finish($, 'r1')
   await clock.advance(250)
-  expect(await look(/^ ██▀▀██▀▀██ $/)).toBeUndefined()
+  expect(await look(/^▄▀▀▀▀▀▄$/)).toBeUndefined()
   expect(await look(/^▄▄$/)).toBeDefined()
 
   await ($.classic as any).SubagentStop({ agent_id: 'p1', agent_type: 'Plan', stop_hook_active: false, agent_transcript_path: '/tmp/t' })
@@ -536,7 +536,7 @@ test("helpers are smaller, in Clawd's color, with their own hat and laptop color
     cells.some(p => (p.color === color && p.backgroundColor === backgroundColor) || (p.color === backgroundColor && p.backgroundColor === color))
   expect(has('#3B7DDD', '#EAF4FF')).toBe(true) // rim on lens
   expect(has('#3B7DDD', '#000000')).toBe(true) // rim on pupil
-  expect(has('#E8713A', '#3B7DDD')).toBe(true) // body under the rims
+  expect(has('#E8713A', '#3B7DDD')).toBe(true) // the rims on its head
   // Only the gear changes color: a blue hard hat, a teal laptop.
   expect((await find(/^▄▄$/))?.props?.color).toBe('#3D8BFD')
   expect((await find(/^▀▀$/))?.props?.color).toBe('#2BB3A3')

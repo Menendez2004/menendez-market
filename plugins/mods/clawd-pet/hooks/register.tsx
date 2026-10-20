@@ -300,34 +300,24 @@ function smallLegs(isStepping = false): Seg[] {
   return [helperBody(isStepping ? ' ▀█▀█▀ ' : ' █▀█▀█ ')]
 }
 
-// A researcher is drawn wider than the other helpers, 12×6 pixels, so its
-// big round glasses fit: two lenses with blue rims and white glass, joined at
-// the bridge, the temples running out over its arms, a pupil in each lens.
+// A researcher is the same size as the other helpers, 7×4 pixels, in round
+// glasses: blue rims over its eyes joined at the bridge, the temples out
+// over its arms, white glass with a pupil in each lens.
 //
-//   . # G G G # # G G G # .     row 0  head, the tops of the rims
-//   G G W P W G G W P W G G     row 1  lenses and temples
-//   # G W P W G G W P W G #     row 2  lenses, arms
-//   # # G G G # # G G G # #     row 3  the bottoms of the rims, arms
-//   . # # # # # # # # # # .     row 4  body
-//   . # # . . # # . . # # .     row 5  three legs
+//   . G G # G G .     row 0  head, the tops of the rims
+//   G P W G P W G     row 1  lenses, bridge and temples
+//   . # # # # # .     row 2  body
+//   . # . # . # .     row 3  legs
 //
 // The pupils (P) glance left and right as it reads.
-const RESEARCHER_WIDTH = 12
+const RESEARCHER_WIDTH = 7
 
 function researcherRows(tick: number): Seg[][] {
-  const pupil = [1, 1, 0, 1, 1, 2][Math.floor(tick / 2) % 6] ?? 1
-  const lens = [0, 1, 2].map(i => (i === pupil ? 'P' : 'W')).join('')
-  const art = [
-    '.#GGG##GGG#.',
-    `GG${lens}GG${lens}GG`,
-    `#G${lens}GG${lens}G#`,
-    '##GGG##GGG##',
-    '.##########.',
-    '.##..##..##.',
-  ]
+  const lens = Math.floor(tick / 6) % 2 === 0 ? 'PW' : 'WP'
+  const art = ['.GG#GG.', `G${lens}G${lens}G`, '.#####.', '.#.#.#.']
   const color = (pixel: string | undefined): string | undefined =>
     pixel === '#' ? BODY : pixel === 'G' ? GLASSES : pixel === 'W' ? LENS : pixel === 'P' ? EYE_BLACK : undefined
-  return [0, 2, 4].map(row => halfBlocks(art[row] ?? '', art[row + 1] ?? '', color))
+  return [0, 2].map(row => halfBlocks(art[row] ?? '', art[row + 1] ?? '', color))
 }
 
 // Two pixel rows as one terminal row of half blocks: the upper pixel in the
@@ -353,7 +343,7 @@ function halfBlocks(upper: string, lower: string, color: (pixel: string | undefi
 // half second.
 function thinkRow(tick: number): Seg[] {
   const cells: Seg[] = Array.from({ length: RESEARCHER_WIDTH }, () => ({ text: ' ' }))
-  cells[4 + (Math.floor(tick / 2) % 4)] = { text: '?', color: THINK_BLUE, bold: true }
+  cells[2 + (Math.floor(tick / 2) % 4)] = { text: '?', color: THINK_BLUE, bold: true }
   return cells
 }
 
@@ -397,7 +387,7 @@ function smallCoderRows(tick: number): Seg[][] {
 
 // One helper standing next to Clawd, three rows tall, each row the same width
 // at every tick: a coder at its laptop, a planner under its hard hat
-// marching in place, a researcher in its big round glasses.
+// marching in place, a researcher in its round glasses.
 function helperRows(kind: HelperKind, tick: number): Seg[][] {
   if (kind === 'code') {
     return smallCoderRows(tick)
@@ -765,7 +755,7 @@ export const register: Register = (on, options) => {
     const rows = e.props.maxRows >= 4 ? 4 : 3
 
     // The helpers stand to Clawd's left, as many as the band has room for
-    // (Clawd itself takes about 30 columns; a researcher 12 plus its margin,
+    // (Clawd itself takes about 30 columns; a researcher 7 plus its margin,
     // any other helper 10 plus its margin).
     const team = (await read($, helpers)) ?? []
     const shown: typeof team = []
