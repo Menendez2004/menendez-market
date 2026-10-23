@@ -194,6 +194,6 @@ Orchestrator reads the whole scratchpad.
    edits are in the owned files: show the Lead `git diff --stat` for them
    and ask whether to relaunch on top of them or have the Lead discard them
    first. Never discard anything yourself
-   (`rules/critical-no-autonomous-git.md`).
+   (`rules/critical-git-commits.md`).
 4. Recompute `## State` (above), log the resume in the `Decisions Log`, and continue
    with the launch rule (`references/parallelization.md` section 3).
