@@ -17,6 +17,7 @@ description: >-
 user-invocable: true
 argument-hint: "<endpoint, feature, branch or handoff file>"
 allowed-tools: Read Glob Grep Edit Write Bash
+model: claude-sonnet-5-5
 metadata:
   version: 1
   category: documentation
@@ -179,6 +180,14 @@ Follow `references/implementing-a-handoff.md`. In short:
    and `updated`, and add a line to **Changelog** naming each change and
    whether it is breaking for the receiver.
 3. Re-run the validator.
+
+## Model
+
+Handoffs run only on Sonnet 5.5 (`claude-sonnet-5-5`), pinned with
+`model:` in this skill's front matter. If the work is delegated to an
+agent, that agent must also run on `claude-sonnet-5-5`, never on another
+model or a `sonnet` alias. If Sonnet 5.5 is not available, stop and tell
+the user instead of falling back to another model.
 
 ## When Spawned by an Orchestrator
 
