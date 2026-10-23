@@ -9,15 +9,16 @@ description: >-
   agent (Opus) draft one when none is given; maps step dependencies, then
   runs the steps itself or through Task Agents (latest Opus) in their own
   terminals and git worktrees, with read-only Research Sub-agents (Sonnet 5)
-  below them (max 2 levels). Never runs tests, never guesses, never touches
-  git: escalates to the Lead. Also for "orchestrate this", "use
+  below them (max 2 levels). Never runs tests, never guesses: escalates to
+  the Lead. Commits and pushes the finished task as the logged-in user,
+  never co-authored, with Conventional Commits messages. Also for "orchestrate this", "use
   dev-orchestrator", "plan and delegate this task", "run this plan with
   task agents".
 metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify, ponytail]
   status: draft
-  version: 13
+  version: 14
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -56,7 +57,7 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
 | Level | Who | Can do | Can NOT do |
 | --- | --- | --- | --- |
 | -- | **Lead Developer** (human) | Reviews the plan, makes architectural calls, has the final word. | -- |
-| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or have the Planner Agent draft one when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches. | Make architectural or destructive decisions; commit/push/merge/PR. |
+| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or have the Planner Agent draft one when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches; commit and push the finished task as the logged-in user. | Make architectural or destructive decisions; add co-authors; force-push/merge/rebase/PR. |
 | 1 | **Task Agent** | Execute exactly one plan step; modify code for that step inside its own worktree; spawn Research Sub-agents via the inline `Agent` tool. | Edit the Lead's working tree; launch other Task Agents or terminals; work on other steps; run git commands that change anything; commit/push/merge/PR. |
 | 1 | **Planner Agent** | Read the codebase (graphify first), return a plan draft with steps, footprints, hotspots and open questions. | Write/edit anything; spawn any agent; talk to the Lead; decide architecture (lists options instead). |
 | 2 | **Research Sub-agent** | Read files, run searches, read logs/docs, run `graphify`; return a short synthesis. | Write/edit anything; spawn any agent; talk to the Lead. |
@@ -73,7 +74,8 @@ Orchestrator session itself, so run it with `/model opus`), and
 `references/models.md`. Full roles, permissions and briefing templates:
 `references/agent-hierarchy.md`. Hard rules:
 `rules/critical-max-two-levels.md`, `rules/critical-research-read-only.md`,
-`rules/critical-ask-the-lead.md`, `rules/critical-no-autonomous-git.md`,
+`rules/critical-ask-the-lead.md`, `rules/critical-git-commits.md`,
+`rules/critical-conventional-commits.md`,
 `rules/high-adopt-lead-plan.md`, `rules/high-checks-not-tests.md`,
 `rules/high-no-unrequested-tests.md`,
 `rules/high-parallel-disjoint-writes.md`, `rules/high-worktree-isolation.md`,
@@ -313,8 +315,13 @@ any of:
 - a missing or ambiguous requirement (including a gap in the Lead's plan),
 - an architectural crossroads (more than one reasonable design),
 - any destructive action (deleting files, overwriting configs), or
-- **any git operation that mutates shared state** -- `commit`, `push`,
-  merge, or opening a PR. These are exclusively the Lead's action.
+- **any git operation that rewrites or merges shared history** --
+  force-push, merge, rebase, branch creation, or opening a PR. These are
+  exclusively the Lead's action. Plain `commit` and `push` of the finished
+  task are yours, after the final checks pass, as the logged-in user,
+  never co-authored, with a Conventional Commits message
+  (`rules/critical-git-commits.md`,
+  `rules/critical-conventional-commits.md`).
 
 **Every question reaches the Lead here, in the main session, and only
 from you.** Ask it directly (on Claude Code, with `AskUserQuestion`); never
@@ -341,7 +348,8 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-max-two-levels.md` -- hierarchy capped at 2 levels.
 - `rules/critical-research-read-only.md` -- Research Sub-agents never write or spawn.
 - `rules/critical-ask-the-lead.md` -- no guessing on ambiguity or architecture.
-- `rules/critical-no-autonomous-git.md` -- no autonomous git/PR actions.
+- `rules/critical-git-commits.md` -- only the Orchestrator commits/pushes, as the logged-in user, never co-authored; no force-push/merge/PR.
+- `rules/critical-conventional-commits.md` -- every commit message follows Conventional Commits 1.0.0.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
 - `rules/high-no-unrequested-tests.md` -- no unit tests unless the Lead asks for tests.
