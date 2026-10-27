@@ -5,7 +5,7 @@ separate checkout of the project, instead of the Lead's working tree. The
 Orchestrator creates the worktree, the Task Agent edits only inside it, and
 when the step is `Complete` the Orchestrator turns the worktree's changes
 into a patch, checks it, and applies it to the Lead's working tree. The
-changes land there uncommitted; the Orchestrator commits once, after the
+Orchestrator then commits that step on its own, and pushes after the
 final checks (`rules/critical-git-commits.md`).
 
 Why:
@@ -142,15 +142,18 @@ git -C "$ROOT" apply --check "$P" && git -C "$ROOT" apply "$P"
    patch, and escalate with the failing paths. Never use `--3way` or
    `--index`: they stage changes in the Lead's index.
 3. **Apply.** `git apply` writes the changes to the Lead's working tree
-   only, uncommitted and unstaged, as if the Task Agent had edited them in
-   place.
-4. Record `Integrated: <patch path>` in the step's handoff, then merge the
-   result as usual.
-5. Remove the worktree (section 8). The patch stays in `.dev/tasks/` as the
+   only, unstaged, as if the Task Agent had edited them in place.
+4. **Commit.** Stage exactly the files from the `--name-status` list and
+   commit them as one Conventional Commits commit for this step
+   (`rules/critical-git-commits.md`,
+   `rules/critical-conventional-commits.md`). Do not push yet.
+5. Record `Integrated: <patch path>` and `Commit: <short sha>` in the
+   step's handoff, then merge the result as usual.
+6. Remove the worktree (section 8). The patch stays in `.dev/tasks/` as the
    record of what the step changed.
 
-Integrate results one at a time, in the order they arrive; each apply
-updates `ROOT` before the next step's snapshot is taken.
+Integrate and commit results one at a time, in the order they arrive;
+each commit updates `ROOT` before the next step's snapshot is taken.
 
 ## 6. `Blocked` and `Failed` steps
 
