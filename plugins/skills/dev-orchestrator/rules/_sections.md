@@ -6,7 +6,8 @@ Rules governing when the Orchestrator or a Task Agent must stop and hand a
 decision to the Lead Developer, instead of proceeding on its own judgment.
 
 - `critical-ask-the-lead.md`
-- `critical-no-autonomous-git.md`
+- `critical-git-commits.md`
+- `critical-conventional-commits.md`
 - `high-adopt-lead-plan.md`
 
 ## Verification
