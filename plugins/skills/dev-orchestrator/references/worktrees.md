@@ -5,7 +5,8 @@ separate checkout of the project, instead of the Lead's working tree. The
 Orchestrator creates the worktree, the Task Agent edits only inside it, and
 when the step is `Complete` the Orchestrator turns the worktree's changes
 into a patch, checks it, and applies it to the Lead's working tree. The
-changes land there uncommitted, exactly as before; the Lead still commits.
+changes land there uncommitted; the Orchestrator commits once, after the
+final checks (`rules/critical-git-commits.md`).
 
 Why:
 
@@ -94,7 +95,7 @@ BASE="$(snapshot)"
   tracked).
 - It does **not** touch the Lead's index, branches, `HEAD`, stash or
   remote. The commit object is on no branch; git garbage-collects it later.
-  This is not a commit in the sense of `rules/critical-no-autonomous-git.md`.
+  This is not a commit in the sense of `rules/critical-git-commits.md`.
 - Do not use `claude --worktree`, the `Agent` tool's `isolation: "worktree"`
   or `git stash`: the first two start from `HEAD` (missing uncommitted and
   integrated work) and create branches; `git stash` changes the Lead's
