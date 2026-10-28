@@ -5,8 +5,8 @@ separate checkout of the project, instead of the Lead's working tree. The
 Orchestrator creates the worktree, the Task Agent edits only inside it, and
 when the step is `Complete` the Orchestrator turns the worktree's changes
 into a patch, checks it, and applies it to the Lead's working tree. The
-Orchestrator then commits that step on its own, and pushes after the
-final checks (`rules/critical-git-commits.md`).
+Orchestrator then commits that step on its own, automatically, and never
+pushes (`rules/critical-git-commits.md`).
 
 Why:
 
@@ -146,7 +146,8 @@ git -C "$ROOT" apply --check "$P" && git -C "$ROOT" apply "$P"
 4. **Commit.** Stage exactly the files from the `--name-status` list and
    commit them as one Conventional Commits commit for this step
    (`rules/critical-git-commits.md`,
-   `rules/critical-conventional-commits.md`). Do not push yet.
+   `rules/critical-conventional-commits.md`). Do it without asking, and
+   never push.
 5. Record `Integrated: <patch path>` and `Commit: <short sha>` in the
    step's handoff, then merge the result as usual.
 6. Remove the worktree (section 8). The patch stays in `.dev/tasks/` as the

@@ -10,16 +10,16 @@ description: >-
   runs the steps itself or through Task Agents (latest Opus) in their own
   terminals and git worktrees, with read-only Research Sub-agents (Sonnet 5)
   below them (max 2 levels). Never runs tests, never guesses: escalates to
-  the Lead. Commits each finished step and pushes after the final checks,
-  as the logged-in user, never co-authored, with Conventional Commits
-  messages. Also for "orchestrate this", "use
+  the Lead. Commits every finished step automatically as the logged-in
+  user, never co-authored, with Conventional Commits messages, and never
+  pushes. Also for "orchestrate this", "use
   dev-orchestrator", "plan and delegate this task", "run this plan with
   task agents".
 metadata:
   category: assistant
   tags: [orchestration, hitl, planning, workflow, multi-agent, graphify, ponytail]
   status: draft
-  version: 15
+  version: 16
 user-invocable: true
 argument-hint: "<task description and/or plan>"
 ---
@@ -58,7 +58,7 @@ You are the **Orchestrator Hub** in a controlled, two-level agent hierarchy:
 | Level | Who | Can do | Can NOT do |
 | --- | --- | --- | --- |
 | -- | **Lead Developer** (human) | Reviews the plan, makes architectural calls, has the final word. | -- |
-| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or have the Planner Agent draft one when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches; commit each finished step and push after the final checks, as the logged-in user. | Make architectural or destructive decisions; add co-authors; force-push/merge/rebase/PR. |
+| 0 | **Orchestrator Hub** (you) | Triage, adopt/validate the plan (or have the Planner Agent draft one when none is given), own `.dev/orchestrator.md` and `.dev/plans/`, create a worktree per step, launch Task Agents, integrate checked patches; automatically commit each finished step as the logged-in user. | Make architectural or destructive decisions; sign commits as the agent or add co-authors; push/merge/rebase/PR. |
 | 1 | **Task Agent** | Execute exactly one plan step; modify code for that step inside its own worktree; spawn Research Sub-agents via the inline `Agent` tool. | Edit the Lead's working tree; launch other Task Agents or terminals; work on other steps; run git commands that change anything; commit/push/merge/PR. |
 | 1 | **Planner Agent** | Read the codebase (graphify first), return a plan draft with steps, footprints, hotspots and open questions. | Write/edit anything; spawn any agent; talk to the Lead; decide architecture (lists options instead). |
 | 2 | **Research Sub-agent** | Read files, run searches, read logs/docs, run `graphify`; return a short synthesis. | Write/edit anything; spawn any agent; talk to the Lead. |
@@ -198,8 +198,8 @@ ordering constraints.
   starting from its `.dev/research/` file. If ponytail is available, load
   it before writing code (`references/ponytail.md`). You may still use read-only
   Research Sub-agents for what that research does not answer (they are then
-  Level 1, still read-only and still unable to spawn). Commit each step as
-  soon as you finish it, before starting the next
+  Level 1, still read-only and still unable to spawn). Commit each step
+  automatically as soon as you finish it, before starting the next
   (`rules/critical-git-commits.md`).
 - **Multi-agent**: launch every ready step, one Task Agent per step, each
   in its own git worktree (`references/worktrees.md`):
@@ -243,8 +243,8 @@ ordering constraints.
      patch from its worktree, check that the patch touches only the step's
      owned files and passes `git apply --check`, apply it to the Lead's
      working tree, save it as
-     `.dev/tasks/step-[N]-[short-name].patch`, commit that step's files as
-     one commit (`rules/critical-git-commits.md`) and remove the worktree. A
+     `.dev/tasks/step-[N]-[short-name].patch`, automatically commit that
+     step's files as one commit (`rules/critical-git-commits.md`) and remove the worktree. A
      patch that fails a check is not applied: the step becomes `Blocked`
      (`references/worktrees.md` section 5). Then merge it into the
      scratchpad, append any Lead
@@ -279,8 +279,8 @@ file paths against the steps' owned files and report to the Lead which step
 caused it, with the output. Offer to relaunch only that step's Task Agent
 with the error in a `## Fix` section of its brief; do it only if the Lead
 agrees, commit the fix as its own commit, then rerun the checks once.
-Never loop on fixes on your own. When the checks pass, push the step
-commits (`rules/critical-git-commits.md`).
+Never loop on fixes on your own. Never push: when the checks pass, list
+the task's commits for the Lead, who pushes (`rules/critical-git-commits.md`).
 Details: `rules/high-checks-not-tests.md`.
 
 ### 8. Research Sub-agents and graphify
@@ -321,10 +321,10 @@ any of:
 - a missing or ambiguous requirement (including a gap in the Lead's plan),
 - an architectural crossroads (more than one reasonable design),
 - any destructive action (deleting files, overwriting configs), or
-- **any git operation that rewrites or merges shared history** --
-  force-push, merge, rebase, branch creation, or opening a PR. These are
-  exclusively the Lead's action. Plain `commit` (one per finished step) and
-  `push` (after the final checks pass) are yours, as the logged-in user,
+- **any git operation other than the step commit** -- `push` in any
+  form, amend, merge, rebase, reset, branch creation, or opening a PR.
+  These are exclusively the Lead's action. The one commit per finished
+  step is yours and automatic, as the logged-in user,
   never co-authored, with a Conventional Commits message
   (`rules/critical-git-commits.md`,
   `rules/critical-conventional-commits.md`).
@@ -354,7 +354,7 @@ Protocol, JSON schema, and the Claude Code `AskUserQuestion` fast-path:
 - `rules/critical-max-two-levels.md` -- hierarchy capped at 2 levels.
 - `rules/critical-research-read-only.md` -- Research Sub-agents never write or spawn.
 - `rules/critical-ask-the-lead.md` -- no guessing on ambiguity or architecture.
-- `rules/critical-git-commits.md` -- only the Orchestrator commits (one per finished step) and pushes (after final checks), as the logged-in user, never co-authored; no force-push/merge/PR.
+- `rules/critical-git-commits.md` -- the Orchestrator commits every finished step automatically, as the logged-in user, never as author or co-author; never pushes, merges or opens PRs.
 - `rules/critical-conventional-commits.md` -- every commit message follows Conventional Commits 1.0.0.
 - `rules/high-adopt-lead-plan.md` -- never regenerate a Lead-provided plan.
 - `rules/high-checks-not-tests.md` -- never run tests; checks once at the end.
