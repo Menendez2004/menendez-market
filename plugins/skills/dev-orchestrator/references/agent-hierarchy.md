@@ -24,10 +24,10 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Provides the plan most of the time, or approves the one the Orchestrator
   proposes.
 - Makes every architectural decision and has the final word.
-- Is the only one who force-pushes, merges, rebases or opens PRs (or
-  explicitly authorizes it per `rules/critical-git-commits.md`). Commits
-  (one per finished step) and pushes are made by the Orchestrator in the
-  Lead's name (the logged-in git user), never co-authored.
+- Is the only one who pushes, merges, rebases or opens PRs
+  (`rules/critical-git-commits.md`). Commits (one per finished step) are
+  made automatically by the Orchestrator in the Lead's name (the
+  logged-in git user), never with the agent as author or co-author.
 
 ### Orchestrator Hub (Level 0)
 
@@ -44,9 +44,8 @@ Level 1, with exactly the same read-only, no-spawn restrictions).
 - Never implements a step itself in multi-agent mode.
 - Runs the final checks once, after every step is complete, and never runs
   tests (`rules/high-checks-not-tests.md`).
-- Commits each step as soon as it is done (one commit per step), and
-  pushes to the current branch once the final checks pass, as the
-  logged-in git user, never with co-author trailers, with a
+- Commits each step automatically as soon as it is done (one commit per
+  step), never pushes, and always commits as the logged-in git user, never with co-author trailers, with a
   Conventional Commits message (`rules/critical-git-commits.md`,
   `rules/critical-conventional-commits.md`).
 

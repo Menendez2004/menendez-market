@@ -75,7 +75,7 @@ the rest, since they all reach the Lead through the Orchestrator.
 ```json
 {
   "name": "escalate_to_lead",
-  "description": "Halt execution and hand a decision to the human Lead Developer. MUST be used for: missing/ambiguous requirements, architectural crossroads, or any destructive action (delete, overwrite, git force-push/merge/rebase/PR).",
+  "description": "Halt execution and hand a decision to the human Lead Developer. MUST be used for: missing/ambiguous requirements, architectural crossroads, or any destructive action (delete, overwrite, git push/merge/rebase/PR).",
   "parameters": {
     "type": "object",
     "properties": {
