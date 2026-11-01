@@ -6,7 +6,7 @@ description: >-
   each step, and report bugs with full reproduction details.
   Trigger on "run happy path tests", "test the UI flows", "QA the happy path",
   "verify the user journey", or when a test plan defines UI flows.
-allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_click mcp__playwright__browser_fill_form mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_wait_for mcp__playwright__browser_network_requests mcp__playwright__browser_evaluate mcp__playwright__browser_type mcp__playwright__browser_press_key WebFetch
+allowed-tools: mcp__playwright__browser_navigate mcp__playwright__browser_close mcp__playwright__browser_click mcp__playwright__browser_fill_form mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_wait_for mcp__playwright__browser_network_requests mcp__playwright__browser_evaluate mcp__playwright__browser_type mcp__playwright__browser_press_key WebFetch
 metadata:
   version: 2
   category: qa
@@ -113,6 +113,7 @@ The orchestrator's brief is your whole context:
 3. **Execute tests** — navigate, interact, snapshot, verify per mode
 4. **Report results** — structured output per flow with pass/fail
 5. **File bugs** — follow `rules/bug-report.md` for any failures
+6. **Close the browser** — call `mcp__playwright__browser_close` once the last flow is done (pass or fail), so no browser stays open after the run
 
 ## Examples
 

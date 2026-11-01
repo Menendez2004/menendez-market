@@ -197,15 +197,24 @@ harness wake you when it exits (in Claude Code: `Bash` with
 `run_in_background: true`, or the `Monitor` tool):
 
 ```bash
-# One path per running or held step; exits with the first result not merged yet.
-while :; do
+# One path per running or held step; exits with the first result not merged yet,
+# or after 30 minutes with no result, so a dead step never leaves this running.
+deadline=$(( $(date +%s) + 1800 ))
+while [ "$(date +%s)" -lt "$deadline" ]; do
   for f in .dev/tasks/step-2-routes.result.md .dev/tasks/step-4-docs.result.md; do
     [ -f "$f" ] && { [ ! -f "$f.merged" ] || [ "$f" -nt "$f.merged" ]; } \
       && { echo "$f"; exit 0; }
   done
   sleep 5
 done
+echo "TIMEOUT"; exit 1
 ```
+
+On `TIMEOUT`, check each running step's terminal (`orch-sN-name`) or
+inline agent: a step still working gets a new wait; a step whose session
+ended without a result is treated as died mid-way
+(`references/context-scratchpad.md`, resume) and reported to the Lead.
+Never leave a wait running when you stop orchestrating.
 
 After merging a result, `touch <result>.merged`. A result counts as new
 while it has no `.merged` marker or is newer than it, so nothing that lands

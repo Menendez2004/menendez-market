@@ -6,7 +6,7 @@ description: >-
   and malformed requests. Reports bugs with full reproduction details.
   Trigger on "break the API", "chaos monkey", "adversarial testing", "security
   test the endpoints", "test edge cases", or when a test plan defines API endpoints.
-allowed-tools: WebFetch Bash mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_network_requests Read
+allowed-tools: WebFetch Bash mcp__playwright__browser_navigate mcp__playwright__browser_close mcp__playwright__browser_snapshot mcp__playwright__browser_network_requests Read
 metadata:
   version: 2
   category: qa
@@ -137,6 +137,7 @@ The orchestrator's brief is your whole context:
 3. **Execute tests** — systematically attempt each adversarial category per endpoint
 4. **Record everything** — even tests that don't find bugs (proves coverage)
 5. **File bugs** — follow `rules/rpt-bug.md` for any failures
+6. **Close the browser** — if you opened one, call `mcp__playwright__browser_close` when done, so no browser stays open after the run
 
 ## Examples
 

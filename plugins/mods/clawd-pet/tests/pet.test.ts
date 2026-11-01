@@ -542,3 +542,46 @@ test("helpers are smaller, in Clawd's color, with their own hat and laptop color
   expect((await find(/^▀▀$/))?.props?.color).toBe('#2BB3A3')
   await ui.unmount()
 })
+
+// A later session.start (an enable) must replace the animation timer, not
+// stack another: the laptop still takes as long to come out.
+test('a repeated session.start keeps a single animation timer', async ($, on) => {
+  const clock = mock.clock(on)
+  await start($, on)
+  await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+  await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+  await ($.turn as any).start({ text: 'hello' })
+
+  const isOpen = async () => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, /╲/)
+    await ui.unmount()
+    return found !== undefined
+  }
+  await clock.advance(1_000)
+  expect(await isOpen()).toBe(false)
+  await clock.advance(1_000)
+  expect(await isOpen()).toBe(true)
+})
+
+// A subagent that never reported its end leaves with the session (/clear).
+test('helpers leave when the session ends', async ($, on) => {
+  const clock = mock.clock(on)
+  on('agent.spawn', () => ({ model: 'm', agentId: 'lost' }))
+  on('session.end', () => ({ sessionId: 's1' }))
+  answerTurns(on)
+  await start($, on)
+  await ($.agent as any).spawn({ prompt: 'go', subagentType: 'general-purpose' })
+  await clock.advance(250)
+
+  const helperShown = async () => {
+    const ui = await $.ui.mount({ plugin: 'clawd-pet', surface: 'terminal', ...CORNER } as never)
+    const found = await texts(ui as never, /^▀▀$/)
+    await ui.unmount()
+    return found !== undefined
+  }
+  expect(await helperShown()).toBe(true)
+  await ($.session as any).end({ reason: 'clear' })
+  await clock.advance(250)
+  expect(await helperShown()).toBe(false)
+})
