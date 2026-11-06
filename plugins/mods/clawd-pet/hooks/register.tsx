@@ -466,13 +466,17 @@ export const register: Register = (on, options) => {
     footerEverSaidPlan: false,
     footerApplied: undefined,
   }
+  // The one animation timer. A later session.start in the same module (an
+  // enable) replaces it instead of stacking another interval.
+  let ticker: { cancel: () => void } | undefined
 
   on('session.start', async ($, e, next) => {
     c.lastActivityAt = await $.clock.now()
     await update($, mood, () => 'awake')
     await update($, helpers, () => [])
 
-    $.clock.every(TICK_MS, async () => {
+    ticker?.cancel()
+    ticker = $.clock.every(TICK_MS, async () => {
       // Shift+Tab: the footer is the first to show the mode changed. Its word
       // is recorded once each time it changes; it only switches plan mode off
       // once it has been seen saying it is on, so a footer that never shows
@@ -483,6 +487,10 @@ export const register: Register = (on, options) => {
       }
       const current = await moodNow($, c)
       await setMood($, current)
+      // Hidden, nothing draws the frames: skip them, so no redraw is asked.
+      if (await read($, isHidden)) {
+        return
+      }
       if ((await read($, frame)) % 2 === 0) {
         // Working, the laptop comes out; knocked out, it stays where it was;
         // otherwise (planning included) it goes back behind Clawd's back.
@@ -546,6 +554,13 @@ export const register: Register = (on, options) => {
       }
     }
     return { text: `Clawd is now ${PALETTE[name] !== undefined ? name : hex}.` }
+  })
+
+  // A session that ends (exit, /clear, resume) takes its subagents with it:
+  // a helper whose agent never reported its end must not outlive it.
+  on('session.end', async ($, e, next) => {
+    await update($, helpers, () => [])
+    return next(e)
   })
 
   // Anything the person does in the prompt box wakes Clawd up.
