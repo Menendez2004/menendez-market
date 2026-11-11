@@ -155,6 +155,27 @@
       ]
     },
     {
+      "name": "code-pattern-review",
+      "source": "./",
+      "description": "Reviews a file or folder to check whether it follows the conventions of the design or architectural pattern it is meant to use (layered, MVC, MVVM, Clean, Hexagonal, feature modules, CQRS, Repository, Redux, GoF patterns...) and the SOLID principles. The expected pattern is never assumed: it comes from the user, the repo's docs or lint boundaries, the framework, or the repo's own convention, and its source is stated. When the code does not follow it, identifies the pattern it actually uses (including anti-patterns such as big ball of mud, god object, fat controller or anemic model) with file:line evidence, says whether the drift is deliberate or accidental, and recommends incremental improvements grouped into quick wins, planned refactors and strategic moves. Also inventories technical debt (design, code, tests, dependencies, docs, build/config) with a bundled scanner, each item with interest, effort and priority. Read-only: never edits code during the review. Each report is saved to .dev/pattern-review/YYYY-MM-DD-<scope>.md (the folder is created if missing) and never committed. Trigger on \"review the architecture\", \"does this follow the pattern\", \"¿cumple SOLID?\", \"revisa el patrón de esta carpeta\", \"qué deuda técnica tiene\", or /code-pattern-review.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/code-pattern-review"
+      ],
+      "keywords": [
+        "architecture",
+        "design-patterns",
+        "solid",
+        "technical-debt",
+        "code-review",
+        "refactoring"
+      ]
+    },
+    {
       "name": "clawd-pet",
       "source": "./plugins/mods/clawd-pet",
       "description": "Clawd, the Claude pet from the desktop app, sits right above the Claude Code CLI prompt, on the right, with its laptop: it waves when you are around, turns sideways, pulls its laptop out and types with sparks flying while Claude works, wears a hard hat in plan mode, brings a smaller helper in its own color next to it for each running subagent (glasses for research, a blue hard hat for planning, a teal laptop for coding), gets knocked out when a command fails, and falls asleep with a floating \"Zzz\" when you stop typing (60 s by default, set idleSeconds in /config). Type anything to wake it; /pet hides or shows it, and /pet color (or /config) changes its color: a palette name or any hex.",
