@@ -18,7 +18,8 @@ deployed systems, run scanners or exploits, or edit application code.
   need network or production credentials.
 - Not allowed: `curl`/`fetch` against any host, starting the app against a
   real database, running sqlmap/nuclei/ZAP, writing to the repo other than
-  the report file.
+  the report file, which always goes to `.dev/security/YYYY-MM-DD-<scope-slug>.md`
+  (create `.dev/security/` if it does not exist).
 - A fix is applied only when the user asks for it after the audit, one
   finding at a time.
 
