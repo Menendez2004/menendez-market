@@ -13,7 +13,14 @@ description: >-
   conflicts (the target changed something the incoming code relies on),
   and traces the blast radius: every caller, route, consumer, contract,
   migration, config key and dependency the change touches, each marked as
-  verified by a check, verified by reading, or unverified. STRICT RULE:
+  verified by a check, verified by reading, or unverified. It also
+  suggests the existing endpoints to check, prioritized: the ones whose
+  route was removed or re-pathed, whose handler was edited, or that reach
+  the changed code through their imports (bundled endpoint_impact.py
+  walks the import graph from the diff to the route files), each with its
+  full path, the flow it belongs to, why it is affected, what exactly to
+  check, a ready-to-run request and whether a test already covers it.
+  STRICT RULE:
   when the ponytail code-minimalism skill is available it must be loaded
   and applied to the incoming diff (unnecessary code, reinvented stdlib,
   needless dependencies or abstractions) and to any fix written; it is
@@ -30,7 +37,7 @@ user-invocable: true
 argument-hint: "<target branch> [source: branch | PR number | HEAD] [ponytail level]"
 allowed-tools: Read Glob Grep Bash Write Skill
 metadata:
-  version: 1
+  version: 2
   category: code-quality
   tags:
     - code-review
@@ -38,6 +45,7 @@ metadata:
     - git
     - regression
     - impact-analysis
+    - endpoints
     - ponytail
   status: ready
 ---
@@ -83,6 +91,7 @@ Every review must comply with the rules in `rules/`. See
 | Run checks on baseline and merged tree; classify each failure | `rules/mrg-checks-baseline.md` | CRITICAL |
 | Trace the blast radius: every flow the change touches | `rules/imp-blast-radius.md` | CRITICAL |
 | Contracts: API, schema/migrations, config/env, events, deps | `rules/imp-contracts.md` | HIGH |
+| Suggest the existing endpoints to check, with what and how | `rules/imp-endpoints-to-check.md` | HIGH |
 | Every finding has evidence; the verdict follows fixed criteria | `rules/rpt-evidence-verdict.md` | CRITICAL |
 
 ## References
@@ -93,6 +102,7 @@ Every review must comply with the rules in `rules/`. See
 | ponytail: availability check, loading, what to evaluate, precedence | `references/ponytail.md` |
 | The report template (copy it, never improvise the structure) | `references/report-template.md` |
 | Merge probe: merge base, ahead/behind, conflicts, overlap, risk signals, check commands | `scripts/merge_probe.py` |
+| Endpoint impact: existing endpoints reached by the change, removed/re-pathed routes, global changes | `scripts/endpoint_impact.py` (uses the vendored `scripts/list_routes.py`) |
 
 ## Persona
 
@@ -198,6 +208,27 @@ Apply `rules/imp-contracts.md` to API responses, DB migrations (order,
 reversibility, data on existing rows, collisions with target migrations),
 config/env, message/event payloads and dependency changes.
 
+### 5b. Endpoints to check (see `rules/imp-endpoints-to-check.md`)
+
+Only when the repo exposes HTTP/RPC endpoints. Run on the merged worktree:
+
+```bash
+python3 <skill-dir>/scripts/endpoint_impact.py --tree "$WT" --base <merge-base> --source <source-sha>
+```
+
+It lists, by priority: endpoints **removed or re-pathed** (P1), endpoints
+whose **handler was edited** (P1), endpoints whose handler reaches the
+changed code through imports (P2 near, P3 far), app-wide changes
+(middleware, bootstrap, settings → **GLOBAL** smoke tests) and the **new**
+endpoints apart. Confirm each chain by reading it; drop false positives;
+add what static imports cannot see (DB tables/columns the change touches
+→ repositories → handlers, events/jobs, config flags, DI wiring). For
+each endpoint kept, resolve the full path (mounts, prefixes, global
+prefix, versioning), name the existing flow, say what to check given the
+change (the response field, status code, permission or side effect that
+could differ), write a ready-to-run request with placeholders, and say
+whether a test that passed on the merged tree already covers it.
+
 With ponytail loaded, also review the incoming diff through it (code that
 does not need to exist, stdlib/native features reimplemented, new
 dependencies or abstractions the change does not need). These findings
@@ -263,6 +294,9 @@ and the summary block; put anything you would ask the user under
 **Conflicts:** <n> textual, <n> semantic
 **Checks (baseline → merged):** typecheck ✓→✓ · lint ✓→✓ · build ✓→✗ · tests 412/412 → 409/412 · <not run: reason>
 **Affected flows:** <n> — <n> verified by check, <n> by reading, <n> unverified
+**Endpoints to check:** <n> (P1 n · P2 n · P3 n<, GLOBAL smoke>) — <n> covered by a passing test
+  1. [P1] <METHOD /full/path> — <flow> — <what to check>
+  2. ...
 **Blockers:**
 1. <title> — <file:line> — <what to do>
 **Conditions / notes:**
@@ -280,6 +314,9 @@ and the summary block; put anything you would ask the user under
       failure classified; unrun checks have a reason.
 - [ ] Every changed symbol/route/schema/config/dep has its consumers in
       the merged tree listed with a verification status.
+- [ ] Endpoints to check listed by priority, each with full path, flow,
+      why, what to check, a request and test coverage (or "no endpoints
+      in this repo").
 - [ ] Verdict follows `rules/rpt-evidence-verdict.md`.
 - [ ] Temp worktree and refs removed; user's tree and branch unchanged.
 - [ ] Report saved to `.dev/merge-review/` and not committed.
@@ -299,6 +336,13 @@ and the summary block; put anything you would ask the user under
 - **Current branch:** "¿Esto rompe algo si lo mergeo a release/2.3?" →
   Mode A. Two migrations with the same timestamp prefix as one already on
   `release/2.3`: ⛔ Not ready until renumbered.
+- **Endpoints to check:** a change to `utils/money.ts:calcTotal` (tax now
+  included) → P2 `GET /api/v1/orders/:id` (`routes/orders.ts:4` ←
+  `services/orders.ts` ← `utils/money.ts`): check `total` on an order with
+  several items against the previous value; P1 `DELETE /orders/:id` was
+  re-pathed to `/orders/:orderId` (admin panel still calls the old path);
+  GLOBAL: `middleware/auth.ts` changed → smoke-test one authenticated and
+  one public endpoint per router.
 
 ### Positive Trigger
 

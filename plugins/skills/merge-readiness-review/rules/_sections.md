@@ -28,6 +28,7 @@ Everything outside the diff that calls into what the diff changes.
 
 - `imp-blast-radius.md` (CRITICAL)
 - `imp-contracts.md` (HIGH)
+- `imp-endpoints-to-check.md` (HIGH)
 
 ### rpt — Reporting
 Impact: CRITICAL

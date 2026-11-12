@@ -32,6 +32,7 @@ reviews compare over time; write the prose in the user's language. Save to
 | Semantic conflicts | n |
 | Checks | n regressions · n pre-existing · n fixed · n not verified |
 | Affected flows | n — n by check · n by reading · n unverified |
+| Endpoints to check | n — P1 n · P2 n · P3 n · GLOBAL yes/no — n covered by a passing test |
 | Contracts | n findings |
 | Minimalism (ponytail) | n findings / not available |
 
@@ -71,6 +72,32 @@ reviews compare over time; write the prose in the user's language. Save to
 | # | Changed surface | Consumer (`file:line`) | Flow | Status | Notes |
 |---|---|---|---|---|---|
 | F1 | | | | Verified by check / by reading / Unverified | |
+
+## Endpoints to check
+
+<"No HTTP/RPC endpoints in this repo." or the table. Ordered P1 → P2 → P3 → GLOBAL.
+Full paths (mounts and prefixes resolved). New endpoints go in their own list below.>
+
+| # | Prio | Method & full path | Route at | Existing flow | Why it is affected (chain) | What to check | Covered by test (merged) |
+|---|---|---|---|---|---|---|---|
+| E1 | P1 | `DELETE /api/v1/orders/:id` | `routes/orders.ts:5` | admin cancels order | path renamed to `/orders/:orderId` | old path now 404 for existing clients | no |
+| E2 | P2 | `GET /api/v1/orders/:id` | `routes/orders.ts:4` | order detail | `routes/orders.ts` ← `services/orders.ts` ← `utils/money.ts:calcTotal` | `total` for a multi-item order vs. previous value | `orders.spec.ts:30` ✓ |
+
+### Requests
+
+```bash
+# E2 — order detail: total must <expected behavior after the change>
+curl -sS -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/orders/<order-id>"
+```
+
+### GLOBAL smoke tests
+
+<Only when app-wide files changed (middleware, bootstrap, settings): one
+public and one authenticated endpoint per router/module, and why.>
+
+### New endpoints (not existing flows)
+
+- `POST /api/v1/users` — `routes/users.ts:5`
 
 ## Contracts
 
