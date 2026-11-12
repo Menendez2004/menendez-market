@@ -15,6 +15,7 @@ Marketplace de plugins para Claude Code.
 /plugin install api-handoff@menendez-market
 /plugin install endpoint-security-audit@menendez-market
 /plugin install code-pattern-review@menendez-market
+/plugin install merge-readiness-review@menendez-market
 /plugin install clawd-pet@menendez-market
 ```
 
@@ -31,6 +32,7 @@ Marketplace de plugins para Claude Code.
 | `api-handoff` | Escribe e implementa documentos de handoff (Markdown) entre frontend y backend. Para frontend: el endpoint que debe consumir; para backend: el endpoint que debe construir. Cada endpoint lleva su finalidad, método y ruta completa, auth, parámetros, headers, el body exacto (tabla de campos + ejemplo JSON que deben coincidir), todas las respuestas de éxito y error, efectos secundarios y criterios de aceptación verificables, todo extraído del código real (lo que no está decidido queda como `TBD` + pregunta abierta). Usa una plantilla fija con front matter YAML e incluye un script validador, para que cualquier otra sesión de Claude pueda implementarlo tal cual y reportar diferencias con el contrato. |
 | `endpoint-security-audit` | Auditoría de seguridad de caja blanca de los endpoints de una API y de las funciones que usan sus rutas. Arma el mapa de rutas (método, ruta completa, handler, cadena de middleware y auth) con un script incluido, y sigue cada dato del request por el handler y por cada servicio, repositorio y helper que llama. Revisa autenticación, autorización por objeto y por función (BOLA/IDOR, BFLA), inyección (SQL, NoSQL, comandos), path traversal y subida de archivos, SSRF, mass assignment, exposición de datos y rutas del servidor, rate limits y lógica de dinero (montos negativos, condiciones de carrera, idempotencia). Cada hallazgo lleva `archivo:línea`, el request que lo dispara, severidad, OWASP API Top 10 + CWE y la corrección; lo que no se puede confirmar va aparte. Solo lee código: nunca ataca un sistema en ejecución. Guarda cada reporte en `.dev/security/YYYY-MM-DD-<alcance>.md` (crea la carpeta si no existe) y no lo commitea. |
 | `code-pattern-review` | Revisa un archivo o carpeta para ver si sigue las convenciones del patrón de diseño o de arquitectura que debería usar (capas, MVC, MVVM, Clean, Hexagonal, módulos por feature, CQRS, Repository, Redux, patrones GoF…) y los principios SOLID. Nunca asume el patrón: lo toma de lo que pidas, de la documentación o las reglas de límites del repo, del framework o de la convención del propio repo, y dice de dónde lo sacó. Si el código no lo sigue, identifica el patrón que realmente usa (incluidos antipatrones como big ball of mud, god object, fat controller o modelo anémico) con evidencia `archivo:línea`, indica si la desviación es deliberada o accidental y recomienda mejoras incrementales (quick wins, refactors planeados y decisiones estratégicas). También inventaría la deuda técnica (diseño, código, tests, dependencias, documentación, build/config) con un script incluido; cada punto lleva su costo actual (interés), esfuerzo y prioridad. Solo lee código: no lo modifica durante la revisión. Guarda cada reporte en `.dev/pattern-review/YYYY-MM-DD-<alcance>.md` (crea la carpeta si no existe) y no lo commitea. |
+| `merge-readiness-review` | Evalúa si lo que se va a mergear a una rama (la que pidas; el origen puede ser tu rama actual, otra rama o un PR) funciona contra esa rama tal como está hoy, sin conflictos y sin romper otros flujos. Trae la rama destino actualizada, simula el merge en un git worktree temporal (nunca toca tu árbol ni tus ramas), corre los checks del propio repo (install, typecheck, lint, build, tests) primero sobre la rama destino sola (baseline) y luego sobre el resultado del merge, y clasifica cada falla como regresión, preexistente, arreglada o no verificada. Detecta conflictos textuales y semánticos (la rama destino renombró, borró o cambió algo que el código entrante usa, o al revés; migraciones que chocan) y sigue el radio de impacto: cada llamada, ruta, consumidor, contrato, migración, clave de config y dependencia que toca el cambio, en el árbol ya mergeado, marcada como verificada por un check, por lectura o no verificada. **Regla estricta:** si la skill `ponytail` está disponible, siempre se carga y se aplica al diff entrante y a cualquier corrección (nunca se instala; nunca quita validaciones, seguridad ni tests). Veredicto: Listo / Listo con condiciones / No listo, con evidencia `archivo:línea`. Incluye `scripts/merge_probe.py` (merge base, commits adelante/atrás, conflictos con `merge-tree`, archivos en ambos lados, señales de riesgo y comandos de checks detectados). Nunca hace merge, push, rebase ni commit. Guarda cada reporte en `.dev/merge-review/YYYY-MM-DD-<origen>-into-<destino>.md` (crea la carpeta si no existe) y no lo commitea. |
 
 ## Estructura
 
@@ -50,13 +52,14 @@ plugins/
     api-handoff/            # SKILL.md + references/ (plantilla, ejemplos), rules/, scripts/validate_handoff.py
     endpoint-security-audit/ # SKILL.md + references/ (descubrimiento de rutas, sinks, OWASP, plantilla), rules/, scripts/list_routes.py
     code-pattern-review/    # SKILL.md + references/ (catálogo de patrones, catálogo de deuda técnica, plantilla), rules/, scripts/debt_scan.py
+    merge-readiness-review/ # SKILL.md + references/ (checklist de impacto, ponytail, plantilla), rules/, scripts/merge_probe.py
   mods/
     clawd-pet/              # .claude-plugin/plugin.json + hooks/register.tsx, types/, tests/
 ```
 
 Cada entrada de `marketplace.json` usa `"strict": false` y declara sus skills con
 `"skills": [...]`. `dev-orchestrator` carga solo su skill (sus agentes
-`orch-planner` y `orch-researcher`, y su hook de ruteo), `unit-test-generator`, `api-handoff`, `endpoint-security-audit` y `code-pattern-review` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
+`orch-planner` y `orch-researcher`, y su hook de ruteo), `unit-test-generator`, `api-handoff`, `endpoint-security-audit`, `code-pattern-review` y `merge-readiness-review` cargan solo la suya, y el plugin `qa` carga las cinco skills de `plugins/skills/qa/`
 juntas, porque `qa-orchestrator` lanza a las demás.
 
 Para agregar una skill nueva: crea `plugins/skills/<nombre>/SKILL.md` y agrega una

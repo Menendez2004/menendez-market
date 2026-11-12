@@ -176,6 +176,27 @@
       ]
     },
     {
+      "name": "merge-readiness-review",
+      "source": "./",
+      "description": "Evaluates whether the code about to be merged into a target branch (named by the user: the current branch, another branch or a PR as the source) works against that branch as it is now, without conflicts and without breaking other flows. Fetches the target fresh, simulates the merge in a temporary git worktree (never touches the user's tree or branches), runs the repo's own checks (install, typecheck, lint, build, tests) on the target alone as a baseline and on the merged result, and classifies every failure as regression, pre-existing, fixed or not verified. Finds textual conflicts and semantic ones (the target renamed, removed or changed something the incoming code relies on, or vice versa, colliding migrations), and traces the blast radius: every caller, route, consumer, contract, migration, config key and dependency the change touches, in the merged tree, each marked as verified by a check, by reading, or unverified. STRICT RULE: when the ponytail code-minimalism skill is available it is always loaded and applied to the incoming diff and to any fix (never installed; never removes validation, security or tests). Verdict: Ready / Ready with conditions / Not ready, with file:line evidence. Bundles a merge_probe.py script (merge base, ahead/behind, conflicts via merge-tree, overlap, risk signals, detected check commands). Never merges, pushes, rebases or commits. Each report is saved to .dev/merge-review/YYYY-MM-DD-<source>-into-<target>.md (the folder is created if missing) and never committed. Trigger on \"¿esto se puede mergear a develop?\", \"evalúa mi rama contra main\", \"revisa el PR 42 contra release\", \"is this safe to merge into main?\", or /merge-readiness-review.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Menendez2004"
+      },
+      "strict": false,
+      "skills": [
+        "./plugins/skills/merge-readiness-review"
+      ],
+      "keywords": [
+        "merge",
+        "code-review",
+        "git",
+        "regression",
+        "impact-analysis",
+        "ponytail"
+      ]
+    },
+    {
       "name": "clawd-pet",
       "source": "./plugins/mods/clawd-pet",
       "description": "Clawd, the Claude pet from the desktop app, sits right above the Claude Code CLI prompt, on the right, with its laptop: it waves when you are around, turns sideways, pulls its laptop out and types with sparks flying while Claude works, wears a hard hat in plan mode, brings a smaller helper in its own color next to it for each running subagent (glasses for research, a blue hard hat for planning, a teal laptop for coding), gets knocked out when a command fails, and falls asleep with a floating \"Zzz\" when you stop typing (60 s by default, set idleSeconds in /config). Type anything to wake it; /pet hides or shows it, and /pet color (or /config) changes its color: a palette name or any hex.",
